@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เกมจับคู่ SDGs | 2 Columns Mobile Fixed</title>
+    <title>เกมจับคู่ SDGs | Final Version</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -35,15 +35,11 @@
         /* Card Styling & States */
         .card {
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            min-height: 70px; /* ลดความสูงขั้นต่ำลงเล็กน้อย */
+            min-height: 70px; 
             display: flex; 
             align-items: center;
             background-color: white; 
             text-align: left;
-        }
-        .card:hover:not(.matched) {
-            transform: translateY(-2px) scale(1.01);
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
         }
         .selected {
             border-color: var(--color-highlight) !important;
@@ -52,30 +48,23 @@
         }
         .matched {
             pointer-events: none;
-            animation: pulse-correct 0.5s ease-out;
             opacity: 0.8;
         }
-        .incorrect {
-            animation: shake 0.4s;
-        }
-
-        /* Timer Styles (เหมือนเดิม) */
-        .progress-ring { position: relative; width: 48px; height: 48px; }
-        .progress-ring-fg { transition: stroke-dashoffset 1s linear; }
         
-        @keyframes pulse-correct { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
-
-        .hidden { display: none !important; }
-
         /* KEY CHANGE: Force 2 equal columns on all screens */
         #game-area {
-            /* 2 คอลัมน์บนทุกขนาดจอ */
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
         
-        /* Review Grid (ปรับให้ใช้ 2 คอลัมน์ด้วย) */
+        /* Review Card (Icon Left, Text Right) */
+        .review-card {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+        }
+        
+        /* Grid settings for Review Screen */
         #review-grid {
             grid-template-columns: 1fr; 
             gap: 12px;
@@ -91,21 +80,13 @@
             }
         }
         
-        /* Review Card (Icon Left, Text Right) */
-        .review-card {
-            display: flex;
-            align-items: center;
-            padding: 8px;
-        }
-
-        /* Adjust icon size for tight mobile layout on game screen */
         .game-icon {
-            width: 40px; /* เล็กลง */
-            height: 40px; /* เล็กลง */
-            margin: 0 auto; /* จัดตรงกลางในคอลัมน์ของมัน */
+            width: 40px; 
+            height: 40px; 
+            margin: 0 auto; 
         }
         .text-card p {
-            font-size: 0.8rem; /* ลดขนาด font ในการ์ดข้อความ */
+            font-size: 0.8rem; 
             line-height: 1.1;
         }
     </style>
@@ -122,21 +103,27 @@
         
         <div id="review-screen">
             <h2 class="text-2xl font-bold text-center text-gray-700 mb-4 font-prompt">💡 ทบทวนข้อมูลที่ถูกต้อง (Key Answer)</h2>
-            <div class="max-h-[60vh] overflow-y-auto pr-2 mb-6 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
-                
+            <div class="max-h-[50vh] overflow-y-auto pr-2 mb-4 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
                 <div id="review-grid" class="grid gap-2">
                     </div>
             </div>
-            <button id="goToLoginButton" onclick="showLoginModal()" 
-                    class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span>เริ่มเกมทดสอบ</span>
-            </button>
+            
+            <div class="space-y-3">
+                <button id="goToLoginButton" onclick="showLoginModal()" 
+                        class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span>เริ่มเกมทดสอบ</span>
+                </button>
+                <button id="showLeaderboardButton" onclick="showLeaderboard()" 
+                        class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <span>บอร์ดคะแนน (Leaderboard)</span>
+                </button>
+            </div>
         </div>
 
         <div id="game-screen" class="hidden">
             <div class="flex justify-between items-center bg-white/70 rounded-xl p-3 md:p-5 mb-4 md:mb-6 shadow-lg border border-white/80 text-sm md:text-base">
-                
                 <div class="flex items-center space-x-2">
                     <div class="progress-ring">
                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -145,14 +132,11 @@
                         </svg>
                         <span id="timer-display" class="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600">120s</span>
                     </div>
-                    <span class="font-bold text-gray-800 hidden md:block">เวลา:</span>
                 </div>
-
                 <div class="flex items-center space-x-1 md:space-x-3">
                     <svg class="w-5 h-5 md:w-7 md:h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0a9 9 0 0118 0z"></path></svg>
                     <span class="font-bold text-gray-800">ถูก: <span id="matched-count" class="text-green-600">0/17</span></span>
                 </div>
-
                 <div class="flex items-center space-x-1 md:space-x-3">
                     <svg class="w-5 h-5 md:w-7 md:h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0a9 9 0 0118 0z"></path></svg>
                     <span class="font-bold text-gray-800">ผิด: <span id="mistakes-count" class="text-red-500">0</span></span>
@@ -202,21 +186,44 @@
             </div>
             
             <div class="space-y-3">
-                <button id="saveButton" onclick="submitScore()" 
+                <button id="okButton" onclick="saveAndGoToHome()" 
                         class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-base">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    <span>บันทึกผลการทดสอบ</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span>ตกลง (บันทึกผลและกลับหน้าแรก)</span>
                 </button>
                 <p id="save-status" class="text-center text-xs h-3 md:h-4"></p>
-
-                <button onclick="window.location.reload()" class="w-full bg-gradient-to-r from-gray-500 to-gray-700 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-base">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.418 5h.582m-15.356 2A8.001 8.001 0 0020.418 15m0 0H15"></path></svg>
-                    <span>เริ่มเกมใหม่</span>
-                </button>
             </div>
         </div>
     </div>
+    
+    <div id="leaderboardModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-md md:max-w-lg transform scale-100 transition duration-300">
+            <h3 class="text-2xl font-extrabold text-center mb-4 font-prompt text-purple-700">🏆 บอร์ดคะแนนสูงสุด</h3>
+            <p class="text-center text-sm text-gray-600 mb-4">เรียงตามคู่ที่ถูกต้องมากที่สุด และเวลาที่ใช้น้อยที่สุด</p>
+            
+            <div class="max-h-[65vh] overflow-y-auto pr-2 mb-5">
+                <table class="min-w-full divide-y divide-gray-300 rounded-lg overflow-hidden shadow-md">
+                    <thead class="bg-gray-200 sticky top-0">
+                        <tr>
+                            <th class="px-2 py-2 text-left text-xs font-bold text-gray-600 uppercase w-10">#</th>
+                            <th class="px-2 py-2 text-left text-xs font-bold text-gray-600 uppercase">รหัสพนักงาน</th>
+                            <th class="px-2 py-2 text-center text-xs font-bold text-gray-600 uppercase">คู่ถูก</th>
+                            <th class="px-2 py-2 text-center text-xs font-bold text-gray-600 uppercase">เวลา (วิ)</th>
+                            <th class="px-2 py-2 text-center text-xs font-bold text-gray-600 uppercase hidden sm:table-cell">ผิด</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body" class="bg-white divide-y divide-gray-200">
+                        <tr id="loading-row"><td colspan="5" class="text-center py-4 text-gray-500">กำลังโหลด...</td></tr>
+                    </tbody>
+                </table>
+            </div>
 
+            <button onclick="hideLeaderboard()" 
+                    class="w-full bg-gradient-to-r from-gray-500 to-gray-700 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-base">
+                <span>ปิด</span>
+            </button>
+        </div>
+    </div>
 
     <script>
         // --- Firebase Configuration (Update this section) ---
@@ -232,7 +239,7 @@
              firebase.initializeApp(firebaseConfig);
              db = firebase.firestore();
         } else {
-             console.warn("Firebase Config Not Set: Data saving will be disabled.");
+             console.warn("Firebase Config Not Set: Data saving and Leaderboard will be disabled.");
         }
 
         // --- Game Setup ---
@@ -270,9 +277,8 @@
         // --- DOM Elements Cache ---
         const DOM = {
             reviewScreen: document.getElementById('review-screen'),
-            keyAnswerList: document.getElementById('review-grid'), // Changed to review-grid
+            keyAnswerList: document.getElementById('review-grid'), 
             gameScreen: document.getElementById('game-screen'),
-            gameArea: document.getElementById('game-area'),
             imageColumn: document.getElementById('image-column'),
             textColumn: document.getElementById('text-column'),
             timerDisplay: document.getElementById('timer-display'),
@@ -282,7 +288,9 @@
             gameMessage: document.getElementById('game-message'),
             startModal: document.getElementById('startModal'),
             resultModal: document.getElementById('resultModal'),
-            saveButton: document.getElementById('saveButton'),
+            okButton: document.getElementById('okButton'), // Renamed from saveButton
+            leaderboardModal: document.getElementById('leaderboardModal'),
+            leaderboardBody: document.getElementById('leaderboard-body'),
         };
 
         // --- Core Functions ---
@@ -294,12 +302,11 @@
             return array;
         }
         
-        // NEW: Populate Key Answer List
         function populateKeyAnswer() {
             DOM.keyAnswerList.innerHTML = '';
             sdgGoals.forEach((item, index) => {
                 const div = document.createElement('div');
-                div.className = "review-card card p-2 rounded-xl shadow-md border border-gray-200"; // Added review-card class
+                div.className = "review-card card p-2 rounded-xl shadow-md border border-gray-200";
                 div.innerHTML = `
                     <img src="${item.iconUrl}" alt="${item.matchId}" class="h-10 w-10 object-contain flex-shrink-0 mr-3">
                     <p class="text-sm font-semibold text-gray-800">
@@ -310,13 +317,11 @@
             });
         }
         
-        // NEW: Show Login Modal
         function showLoginModal() {
             DOM.startModal.classList.remove('hidden');
             document.getElementById('employeeIdInput').focus();
         }
 
-        // UPDATED: Start Game Logic
         function startGame() {
             DOM.startModal.classList.add('hidden');
             DOM.reviewScreen.classList.add('hidden');
@@ -355,11 +360,9 @@
             let classes = "card p-2 rounded-xl shadow-md border border-white/80 transition-all duration-300 ease-in-out cursor-pointer hover:shadow-xl hover:bg-white/80 bg-white/60";
 
             if (type === 'image') {
-                // Image Card: Icon จัดตรงกลางในพื้นที่แคบๆ
                 classes += " justify-center text-center";
                 card.innerHTML = `<img src="${item.iconUrl}" alt="${item.matchId}" class="game-icon object-contain">`;
             } else {
-                // Text Card: ข้อความจัดซ้าย
                 classes += " text-card justify-start text-sm font-semibold text-gray-800";
                 card.innerHTML = `<p>${item.text}</p>`;
             }
@@ -481,7 +484,8 @@
             document.getElementById('final-matched-score').textContent = matchedPairs;
             document.getElementById('final-mistakes').textContent = mistakesCount;
             document.getElementById('save-status').textContent = '';
-            DOM.saveButton.classList.remove('opacity-60', 'cursor-not-allowed');
+            
+            DOM.okButton.classList.remove('opacity-60', 'cursor-not-allowed'); // Enable button
 
             if (isTimeout && matchedPairs < totalPairs) {
                 document.getElementById('result-header').textContent = "🚨 หมดเวลา!";
@@ -498,20 +502,17 @@
             DOM.resultModal.classList.remove('hidden');
         }
         
-        function submitScore() {
-            if (!db) {
-                 document.getElementById('save-status').innerHTML = `<span class="text-red-600">⚠️ ไม่สามารถบันทึกได้: Firebase Config ไม่ถูกต้อง</span>`;
-                 return;
-            }
+        // NEW: Save score and redirect to home (Review Screen)
+        function saveAndGoToHome() {
+            if (DOM.okButton.classList.contains('opacity-60')) return; // Check if already disabled/saving
 
             document.getElementById('save-status').textContent = "กำลังบันทึก...";
-            DOM.saveButton.classList.add('opacity-60', 'cursor-not-allowed');
-            
+            DOM.okButton.classList.add('opacity-60', 'cursor-not-allowed');
+
             const timeForDatabase = timeRemaining <= 0 ? TIME_LIMIT : TIME_LIMIT - timeRemaining;
             
             const gameData = {
                 employeeId: employeeId,
-                userName: 'N/A',
                 score: matchedPairs, 
                 timeTaken: timeForDatabase,
                 mistakesCount: mistakesCount,
@@ -519,13 +520,89 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
+            if (!db) {
+                 document.getElementById('save-status').innerHTML = `<span class="text-red-600">⚠️ ไม่สามารถบันทึกได้: Firebase Config ไม่ถูกต้อง</span>`;
+                 // Fallback: Go back to home anyway
+                 setTimeout(goToHome, 1000); 
+                 return;
+            }
+
+
             db.collection("sdgs_matching_game").doc("v1").collection("employee_results").add(gameData)
                 .then(() => {
                     document.getElementById('save-status').innerHTML = `<span class="text-green-600">✅ บันทึกผลสำเร็จ!</span>`;
+                    setTimeout(goToHome, 800); 
                 })
                 .catch((error) => {
                     document.getElementById('save-status').innerHTML = `<span class="text-red-600">❌ บันทึกผิดพลาด: ${error.message}</span>`;
-                    DOM.saveButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                    setTimeout(goToHome, 2000); // Go back after showing error
+                });
+        }
+        
+        function goToHome() {
+             DOM.resultModal.classList.add('hidden');
+             DOM.reviewScreen.classList.remove('hidden');
+             // Reset input field if needed
+             document.getElementById('employeeIdInput').value = '';
+        }
+
+        // --- Leaderboard Functions ---
+        function showLeaderboard() {
+            DOM.leaderboardModal.classList.remove('hidden');
+            fetchLeaderboardData();
+        }
+
+        function hideLeaderboard() {
+            DOM.leaderboardModal.classList.add('hidden');
+        }
+
+        function fetchLeaderboardData() {
+            DOM.leaderboardBody.innerHTML = '<tr id="loading-row"><td colspan="5" class="text-center py-4 text-gray-500">กำลังโหลด...</td></tr>';
+            
+            if (!db) {
+                DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-600">⚠️ ไม่สามารถโหลดบอร์ดคะแนนได้: Firebase Config ไม่ถูกต้อง</td></tr>';
+                return;
+            }
+            
+            // Query: Sort by score DESC, then by time ASC
+            db.collection("sdgs_matching_game").doc("v1").collection("employee_results")
+                .where('score', '==', totalPairs) // Only show perfect scores for ranking
+                .orderBy('score', 'desc') 
+                .orderBy('timeTaken', 'asc')
+                .limit(20) // Limit to top 20
+                .get()
+                .then((querySnapshot) => {
+                    DOM.leaderboardBody.innerHTML = ''; // Clear loading row
+                    
+                    if (querySnapshot.empty) {
+                        DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">ยังไม่มีผู้ทำคะแนนสมบูรณ์</td></tr>';
+                        return;
+                    }
+
+                    querySnapshot.forEach((doc, index) => {
+                        const data = doc.data();
+                        const rank = index + 1;
+                        const row = document.createElement('tr');
+                        row.className = rank <= 3 ? 'bg-yellow-50/70 font-bold' : 'hover:bg-gray-50';
+                        
+                        let rankIcon = rank;
+                        if (rank === 1) rankIcon = '🥇';
+                        else if (rank === 2) rankIcon = '🥈';
+                        else if (rank === 3) rankIcon = '🥉';
+
+                        row.innerHTML = `
+                            <td class="px-2 py-2 text-left text-sm whitespace-nowrap">${rankIcon}</td>
+                            <td class="px-2 py-2 text-left text-sm whitespace-nowrap text-blue-600">${data.employeeId || 'N/A'}</td>
+                            <td class="px-2 py-2 text-center text-sm whitespace-nowrap text-green-600">${data.score}</td>
+                            <td class="px-2 py-2 text-center text-sm whitespace-nowrap text-indigo-600">${data.timeTaken}</td>
+                            <td class="px-2 py-2 text-center text-sm whitespace-nowrap text-red-500 hidden sm:table-cell">${data.mistakesCount}</td>
+                        `;
+                        DOM.leaderboardBody.appendChild(row);
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error fetching leaderboard: ", error);
+                    DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-600">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
                 });
         }
 
