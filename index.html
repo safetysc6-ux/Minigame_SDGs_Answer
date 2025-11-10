@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมจับคู่ SDGs | Review & Play</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+
+    <style>
+        /* Custom styles */
+        :root {
+            --color-highlight: #2563EB;
+            --color-correct: #22C55E;
+            --color-error: #EF4444;
+        }
+
+        body {
+            font-family: 'Inter', 'Prompt', sans-serif;
+        }
+
+        /* Glassmorphism Effect */
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Card Styling & States */
+        .card {
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            min-height: 80px; 
+            display: flex; /* ใช้ Flexbox สำหรับการ์ดทั้งหมด */
+            align-items: center;
+        }
+        .card:hover:not(.matched) {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+        }
+        .selected {
+            border-color: var(--color-highlight) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+            transform: scale(1.02);
+        }
+        .matched {
+            pointer-events: none;
+            animation: pulse-correct 0.5s ease-out;
+            opacity: 0.8;
+        }
+        .incorrect {
+            animation: shake 0.4s;
+        }
+
+        /* Timer Styles */
+        .progress-ring { position: relative; width: 48px; height: 48px; }
+        .progress-ring-fg { transition: stroke-dashoffset 1s linear; }
+        
+        @keyframes pulse-correct { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+        .hidden { display: none !important; }
+
+        /* Grid arrangement for matching area */
+        #game-area {
+            grid-template-columns: 1fr; /* 1 คอลัมน์บนมือถือ */
+            gap: 10px;
+        }
+        @media (min-width: 768px) {
+            #game-area {
+                grid-template-columns: 1fr 1fr; /* 2 คอลัมน์บน Desktop */
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-2 md:p-4">
+
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 z-0"></div>
+
+    <div id="main-container" class="relative z-10 w-full max-w-2xl lg:max-w-4xl glass-panel rounded-2xl p-4 md:p-8 text-gray-900 animate-in fade-in duration-500">
+        
+        <h1 class="text-3xl md:text-4xl font-extrabold text-blue-800 text-center mb-4 md:mb-6 font-prompt drop-shadow-sm">
+            เกมจับคู่ SDGs <span class="text-purple-700">|</span> <span class="text-pink-700">ทบทวนและทดสอบ</span> 🎯
+        </h1>
+
+        <div id="review-screen">
+            <h2 class="text-2xl font-bold text-center text-gray-700 mb-4 font-prompt">💡 ทบทวนข้อมูลที่ถูกต้อง (Key Answer)</h2>
+            <div class="max-h-[60vh] overflow-y-auto pr-2 mb-6 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
+                <div id="key-answer-list" class="grid grid-cols-1 gap-2">
+                    </div>
+            </div>
+            <button id="goToLoginButton" onclick="showLoginModal()" 
+                    class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>เริ่มเกมทดสอบ</span>
+            </button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div class="flex justify-between items-center bg-white/70 rounded-xl p-3 md:p-5 mb-4 md:mb-6 shadow-lg border border-white/80 text-sm md:text-base">
+                
+                <div class="flex items-center space-x-2">
+                    <div class="progress-ring">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <circle class="text-gray-300" stroke-width="4" stroke="currentColor" fill="none" r="16" cx="18" cy="18" />
+                            <circle id="timer-circle" class="progress-ring-fg" stroke-width="4" stroke="rgb(37, 99, 235)" fill="none" r="16" cx="18" cy="18" stroke-dasharray="100.53" stroke-dashoffset="100.53" stroke-linecap="round"/>
+                        </svg>
+                        <span id="timer-display" class="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600">120s</span>
+                    </div>
+                    <span class="font-bold text-gray-800 hidden md:block">เวลา:</span>
+                </div>
+
+                <div class="flex items-center space-x-1 md:space-x-3">
+                    <svg class="w-5 h-5 md:w-7 md:h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0a9 9 0 0118 0z"></path></svg>
+                    <span class="font-bold text-gray-800">ถูก: <span id="matched-count" class="text-green-600">0/17</span></span>
+                </div>
+
+                <div class="flex items-center space-x-1 md:space-x-3">
+                    <svg class="w-5 h-5 md:w-7 md:h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0a9 9 0 0118 0z"></path></svg>
+                    <span class="font-bold text-gray-800">ผิด: <span id="mistakes-count" class="text-red-500">0</span></span>
+                </div>
+            </div>
+
+            <p id="game-message" class="text-center text-base font-semibold my-2 h-4 md:h-6"></p>
+
+            <div id="game-area" class="grid gap-4 my-4 md:my-6">
+                <div class="flex flex-col space-y-3" id="image-column"></div>
+                <div class="flex flex-col space-y-3" id="text-column"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="startModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-xs md:max-w-sm transform scale-100 transition duration-300">
+            <h3 class="text-2xl font-extrabold text-blue-700 text-center mb-4 font-prompt">🔑 ใส่รหัสพนักงาน</h3>
+            <p class="text-gray-700 text-center mb-5 text-sm md:text-base">กรุณากรอกรหัสพนักงานของคุณเพื่อเริ่มเกม</p>
+            
+            <div class="mb-5">
+                <label for="employeeIdInput" class="block text-gray-700 text-sm font-bold mb-2 text-left">รหัสพนักงาน (ID):</label>
+                <input type="text" id="employeeIdInput" 
+                       class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 bg-white/70 border-gray-300"
+                       placeholder="เช่น E1001" maxlength="10">
+                <p id="idError" class="text-red-600 text-sm mt-2 text-left hidden">⚠️ รหัสพนักงานห้ามว่างเปล่า</p>
+            </div>
+
+            <button id="startButton" onclick="checkEmployeeId()" 
+                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl focus:outline-none focus:shadow-outline transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-base">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>เริ่มเกมทดสอบ</span>
+            </button>
+        </div>
+    </div>
+    
+    <div id="resultModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-xs md:max-w-md transform scale-100 transition duration-300">
+            <h3 id="result-header" class="text-2xl font-extrabold text-center mb-4 font-prompt text-green-700">🎉 สรุปผลการทดสอบ</h3>
+            
+            <div class="bg-blue-50/70 rounded-xl p-4 mb-5 border border-blue-200 text-left text-sm md:text-base">
+                <p class="text-gray-800 font-medium mb-1">รหัสพนักงาน: <span id="final-employee-id" class="text-blue-600 font-bold"></span></p>
+                <p class="text-gray-800 font-medium mb-1">สถานะ: <span id="final-status-text" class="text-green-600 font-bold"></span></p>
+                <p class="text-gray-800 font-medium mb-1">เวลาที่ใช้: <span id="final-time-taken" class="text-indigo-600 font-bold"></span> วินาที</p>
+                <p class="text-gray-800 font-medium mb-1">คู่ที่จับถูก: <span id="final-matched-score" class="text-green-600 font-bold"></span> คู่</p>
+                <p class="text-gray-800 font-medium">คู่ที่จับผิด: <span id="final-mistakes" class="text-red-600 font-bold"></span> ครั้ง</p>
+            </div>
+            
+            <div class="space-y-3">
+                <button id="saveButton" onclick="submitScore()" 
+                        class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-base">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    <span>บันทึกผลการทดสอบ</span>
+                </button>
+                <p id="save-status" class="text-center text-xs h-3 md:h-4"></p>
+
+                <button onclick="window.location.reload()" class="w-full bg-gradient-to-r from-gray-500 to-gray-700 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-base">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.418 5h.582m-15.356 2A8.001 8.001 0 0020.418 15m0 0H15"></path></svg>
+                    <span>เริ่มเกมใหม่</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Firebase Configuration (Update this section) ---
+        const firebaseConfig = {
+            apiKey: "<YOUR_FIREBASE_API_KEY>",
+            authDomain: "<YOUR_FIREBASE_AUTH_DOMAIN>",
+            projectId: "<YOUR_FIREBASE_PROJECT_ID>",
+            // ... (ใส่ config ส่วนที่เหลือ)
+        };
+        
+        let db = null;
+        if (firebaseConfig.projectId && !firebaseConfig.projectId.includes("<YOUR_")) {
+             firebase.initializeApp(firebaseConfig);
+             db = firebase.firestore();
+        } else {
+             console.warn("Firebase Config Not Set: Data saving will be disabled.");
+        }
+
+        // --- Game Setup ---
+        const TIME_LIMIT = 120;
+        let employeeId = ''; 
+        let gameTimer;
+        let timeRemaining = TIME_LIMIT;
+        let selectedImageCard = null;
+        let selectedTextCard = null;
+        let matchedPairs = 0;
+        let mistakesCount = 0;
+        const totalPairs = 17;
+        const CIRCUMFERENCE = 2 * Math.PI * 16; 
+
+        // UPDATED: ข้อมูล SDG (ไม่มีตัวเลขนำหน้า)
+        const sdgGoals = [
+            { matchId: 'SDG1', text: 'ขจัดความยากจน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/1.png' },
+            { matchId: 'SDG2', text: 'ขจัดความหิวโหย', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/2.png' },
+            { matchId: 'SDG3', text: 'สุขภาพและความเป็นอยู่ที่ดี', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/3.png' },
+            { matchId: 'SDG4', text: 'การศึกษาที่มีคุณภาพ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/4.png' },
+            { matchId: 'SDG5', text: 'ความเท่าเทียมทางเพศ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/5.png' },
+            { matchId: 'SDG6', text: 'น้ำสะอาดและการสุขาภิบาล', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/6.png' },
+            { matchId: 'SDG7', text: 'พลังงานสะอาดที่เข้าถึงได้', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/7.png' },
+            { matchId: 'SDG8', text: 'งานที่ดีและการเติบโตทางเศรษฐกิจ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/8.png' },
+            { matchId: 'SDG9', text: 'อุตสาหกรรม นวัตกรรม โครงสร้างพื้นฐาน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/9.png' },
+            { matchId: 'SDG10', text: 'ลดความเหลื่อมล้ำ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/10.png' },
+            { matchId: 'SDG11', text: 'เมืองและชุมชนที่ยั่งยืน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/11.png' },
+            { matchId: 'SDG12', text: 'การบริโภคและการผลิตที่ยั่งยืน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/12.png' },
+            { matchId: 'SDG13', text: 'การรับมือการเปลี่ยนแปลงสภาพภูมิอากาศ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/13.png' },
+            { matchId: 'SDG14', text: 'ทรัพยากรทางทะเล', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/14.png' },
+            { matchId: 'SDG15', text: 'ระบบนิเวศบนบก', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/15.png' },
+            { matchId: 'SDG16', text: 'สังคมสงบสุข ยุติธรรม ไม่แบ่งแยก', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/16.png' },
+            { matchId: 'SDG17', text: 'ความร่วมมือเพื่อการพัฒนาที่ยั่งยืน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/17.png' }
+        ];
+
+        // --- DOM Elements Cache ---
+        const DOM = {
+            reviewScreen: document.getElementById('review-screen'),
+            keyAnswerList: document.getElementById('key-answer-list'),
+            gameScreen: document.getElementById('game-screen'),
+            gameArea: document.getElementById('game-area'),
+            imageColumn: document.getElementById('image-column'),
+            textColumn: document.getElementById('text-column'),
+            timerDisplay: document.getElementById('timer-display'),
+            timerCircle: document.getElementById('timer-circle'),
+            mistakesCount: document.getElementById('mistakes-count'),
+            matchedCount: document.getElementById('matched-count'),
+            gameMessage: document.getElementById('game-message'),
+            startModal: document.getElementById('startModal'),
+            resultModal: document.getElementById('resultModal'),
+            saveButton: document.getElementById('saveButton'),
+        };
+
+        // --- Core Functions ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // NEW: Populate Key Answer List
+        function populateKeyAnswer() {
+            sdgGoals.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center space-x-3 p-2 bg-white rounded-lg shadow-sm";
+                div.innerHTML = `
+                    <img src="${item.iconUrl}" alt="${item.matchId}" class="h-10 w-10 object-contain flex-shrink-0">
+                    <p class="text-sm font-semibold text-gray-800">
+                        <span class="font-bold text-blue-600">Goal ${index + 1}:</span> ${item.text}
+                    </p>
+                `;
+                DOM.keyAnswerList.appendChild(div);
+            });
+        }
+        
+        // NEW: Show Login Modal
+        function showLoginModal() {
+            DOM.startModal.classList.remove('hidden');
+            document.getElementById('employeeIdInput').focus();
+        }
+
+        // UPDATED: Start Game Logic (Moved from Modal button)
+        function startGame() {
+            DOM.startModal.classList.add('hidden');
+            DOM.reviewScreen.classList.add('hidden');
+            DOM.gameScreen.classList.remove('hidden');
+            
+            // Generate Cards (ใช้ 1 คอลัมน์บนมือถือ 2 บน Desktop)
+            const shuffledImageGoals = shuffleArray([...sdgGoals]);
+            const shuffledTextGoals = shuffleArray([...sdgGoals]);
+            DOM.imageColumn.innerHTML = '';
+            DOM.textColumn.innerHTML = '';
+            
+            shuffledImageGoals.forEach(item => {
+                const card = createCard(item, 'image');
+                DOM.imageColumn.appendChild(card);
+            });
+
+            shuffledTextGoals.forEach(item => {
+                const card = createCard(item, 'text');
+                DOM.textColumn.appendChild(card);
+            });
+
+            // Start Timer
+            matchedPairs = 0;
+            mistakesCount = 0;
+            timeRemaining = TIME_LIMIT;
+            updateTimerDisplay();
+            clearInterval(gameTimer);
+            gameTimer = setInterval(updateTimer, 1000);
+        }
+        
+        function createCard(item, type) {
+            const card = document.createElement('div');
+            card.dataset.matchId = item.matchId;
+            card.onclick = () => selectCard(card, type);
+            
+            // Tailwind Classes for Image Left, Text Right
+            let classes = "card p-3 rounded-xl shadow-md border border-white/80 transition-all duration-300 ease-in-out cursor-pointer hover:shadow-xl hover:bg-white/80 bg-white/60";
+
+            if (type === 'image') {
+                // Image Card: รูปอยู่ซ้ายสุด, เนื้อหาว่าง (ตามที่ร้องขอ)
+                classes += " justify-start";
+                card.innerHTML = `<img src="${item.iconUrl}" alt="${item.matchId}" class="h-14 w-14 object-contain flex-shrink-0">`;
+            } else {
+                // Text Card: ข้อความอยู่ซ้ายสุด (เมื่ออยู่ในคอลัมน์ขวา)
+                classes += " justify-start text-sm md:text-base font-semibold text-gray-800";
+                card.textContent = item.text;
+            }
+
+            card.className = classes;
+            return card;
+        }
+
+        function updateTimer() {
+            timeRemaining--;
+            updateTimerDisplay();
+
+            if (timeRemaining <= 0) {
+                clearInterval(gameTimer);
+                endGame(true); 
+            }
+        }
+
+        function updateTimerDisplay() {
+            const percentage = (timeRemaining / TIME_LIMIT) * 100;
+            const offset = CIRCUMFERENCE - (percentage / 100) * CIRCUMFERENCE;
+            
+            const color = timeRemaining <= 30 ? 'rgb(239, 68, 68)' : 'rgb(37, 99, 235)';
+            DOM.timerCircle.style.stroke = color;
+            DOM.timerCircle.style.strokeDashoffset = offset;
+            
+            DOM.timerDisplay.textContent = `${timeRemaining}s`;
+            DOM.timerDisplay.style.color = color;
+
+            DOM.mistakesCount.textContent = mistakesCount;
+            DOM.matchedCount.textContent = `${matchedPairs}/${totalPairs}`;
+        }
+
+        function selectCard(card, type) {
+            if (card.classList.contains('matched')) return;
+
+            const currentSelection = type === 'image' ? selectedImageCard : selectedTextCard;
+            if (currentSelection) {
+                currentSelection.classList.remove('selected', 'bg-red-300/50', 'text-white');
+            }
+            
+            if (type === 'image') { selectedImageCard = card; }
+            else { selectedTextCard = card; }
+            
+            card.classList.add('selected');
+
+            if (selectedImageCard && selectedTextCard) {
+                disableClicks(true);
+                setTimeout(checkMatch, 800);
+            }
+        }
+
+        function disableClicks(status) {
+             const cards = document.querySelectorAll('.card:not(.matched)');
+             cards.forEach(card => card.style.pointerEvents = status ? 'none' : 'auto');
+        }
+
+        function checkMatch() {
+            const card1 = selectedImageCard;
+            const card2 = selectedTextCard;
+            
+            if (!card1 || !card2) return;
+
+            if (card1.dataset.matchId === card2.dataset.matchId) {
+                card1.classList.add('matched', 'bg-green-300/70', 'text-white', 'shadow-green-500/50');
+                card2.classList.add('matched', 'bg-green-300/70', 'text-white', 'shadow-green-500/50');
+                card1.classList.remove('selected', 'hover:bg-white/80');
+                card2.classList.remove('selected', 'hover:bg-white/80');
+                matchedPairs++;
+                DOM.gameMessage.innerHTML = `<span class="text-green-600 font-bold">✅ ถูกต้อง!</span>`;
+                
+                if (matchedPairs === totalPairs) {
+                    endGame(false); 
+                }
+            } else {
+                mistakesCount++;
+                card1.classList.add('incorrect', 'bg-red-300/70', 'text-white');
+                card2.classList.add('incorrect', 'bg-red-300/70', 'text-white');
+                DOM.gameMessage.innerHTML = `<span class="text-red-600 font-bold">❌ ผิด!</span>`;
+
+                setTimeout(() => {
+                    card1.classList.remove('selected', 'incorrect', 'bg-red-300/70', 'text-white');
+                    card2.classList.remove('selected', 'incorrect', 'bg-red-300/70', 'text-white');
+                    DOM.gameMessage.innerHTML = "";
+                }, 800);
+            }
+            
+            selectedImageCard = null;
+            selectedTextCard = null;
+            disableClicks(false);
+            updateTimerDisplay();
+        }
+
+        function checkEmployeeId() {
+            const idInput = document.getElementById('employeeIdInput');
+            const idValue = idInput.value.trim().toUpperCase();
+            
+            if (!idValue) {
+                document.getElementById('idError').classList.remove('hidden');
+                idInput.focus();
+                return;
+            }
+            
+            document.getElementById('idError').classList.add('hidden');
+            employeeId = idValue;
+            startGame();
+        }
+
+        function endGame(isTimeout) {
+            clearInterval(gameTimer);
+            DOM.gameScreen.classList.add('hidden');
+            disableClicks(true);
+            
+            const totalTimeTaken = isTimeout ? TIME_LIMIT : TIME_LIMIT - timeRemaining;
+            
+            // Update Result Modal
+            document.getElementById('final-employee-id').textContent = employeeId;
+            document.getElementById('final-time-taken').textContent = totalTimeTaken;
+            document.getElementById('final-matched-score').textContent = matchedPairs;
+            document.getElementById('final-mistakes').textContent = mistakesCount;
+            document.getElementById('save-status').textContent = '';
+            DOM.saveButton.classList.remove('opacity-60', 'cursor-not-allowed');
+
+            if (isTimeout && matchedPairs < totalPairs) {
+                document.getElementById('result-header').textContent = "🚨 หมดเวลา!";
+                document.getElementById('result-header').classList.replace('text-green-700', 'text-red-700');
+                document.getElementById('final-status-text').textContent = "ไม่สำเร็จ (หมดเวลา)";
+                document.getElementById('final-status-text').classList.replace('text-green-600', 'text-red-600');
+            } else {
+                document.getElementById('result-header').textContent = "🎉 ยอดเยี่ยม!";
+                document.getElementById('result-header').classList.replace('text-red-700', 'text-green-700');
+                document.getElementById('final-status-text').textContent = "สำเร็จ";
+                document.getElementById('final-status-text').classList.replace('text-red-600', 'text-green-600');
+            }
+
+            DOM.resultModal.classList.remove('hidden');
+        }
+        
+        function submitScore() {
+            if (!db) {
+                 document.getElementById('save-status').innerHTML = `<span class="text-red-600">⚠️ ไม่สามารถบันทึกได้: Firebase Config ไม่ถูกต้อง</span>`;
+                 return;
+            }
+
+            document.getElementById('save-status').textContent = "กำลังบันทึก...";
+            DOM.saveButton.classList.add('opacity-60', 'cursor-not-allowed');
+            
+            const timeForDatabase = timeRemaining <= 0 ? TIME_LIMIT : TIME_LIMIT - timeRemaining;
+            
+            const gameData = {
+                employeeId: employeeId,
+                userName: 'N/A',
+                score: matchedPairs, 
+                timeTaken: timeForDatabase,
+                mistakesCount: mistakesCount,
+                isTimeout: timeRemaining <= 0 && matchedPairs < totalPairs,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection("sdgs_matching_game").doc("v1").collection("employee_results").add(gameData)
+                .then(() => {
+                    document.getElementById('save-status').innerHTML = `<span class="text-green-600">✅ บันทึกผลสำเร็จ!</span>`;
+                })
+                .catch((error) => {
+                    document.getElementById('save-status').innerHTML = `<span class="text-red-600">❌ บันทึกผิดพลาด: ${error.message}</span>`;
+                    DOM.saveButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                });
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            populateKeyAnswer();
+            updateTimerDisplay(); 
+        });
+    </script>
+</body>
+</html>
