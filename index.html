@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เกมจับคู่ SDGs | Review & Play</title>
+    <title>เกมจับคู่ SDGs | 2 Columns Mobile Fixed</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -35,9 +35,11 @@
         /* Card Styling & States */
         .card {
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            min-height: 80px; 
-            display: flex; /* ใช้ Flexbox สำหรับการ์ดทั้งหมด */
+            min-height: 70px; /* ลดความสูงขั้นต่ำลงเล็กน้อย */
+            display: flex; 
             align-items: center;
+            background-color: white; 
+            text-align: left;
         }
         .card:hover:not(.matched) {
             transform: translateY(-2px) scale(1.01);
@@ -57,7 +59,7 @@
             animation: shake 0.4s;
         }
 
-        /* Timer Styles */
+        /* Timer Styles (เหมือนเดิม) */
         .progress-ring { position: relative; width: 48px; height: 48px; }
         .progress-ring-fg { transition: stroke-dashoffset 1s linear; }
         
@@ -66,15 +68,45 @@
 
         .hidden { display: none !important; }
 
-        /* Grid arrangement for matching area */
+        /* KEY CHANGE: Force 2 equal columns on all screens */
         #game-area {
-            grid-template-columns: 1fr; /* 1 คอลัมน์บนมือถือ */
+            /* 2 คอลัมน์บนทุกขนาดจอ */
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
-        @media (min-width: 768px) {
-            #game-area {
-                grid-template-columns: 1fr 1fr; /* 2 คอลัมน์บน Desktop */
+        
+        /* Review Grid (ปรับให้ใช้ 2 คอลัมน์ด้วย) */
+        #review-grid {
+            grid-template-columns: 1fr; 
+            gap: 12px;
+        }
+        @media (min-width: 640px) { 
+            #review-grid {
+                grid-template-columns: repeat(2, 1fr); 
             }
+        }
+        @media (min-width: 1024px) { 
+             #review-grid {
+                grid-template-columns: repeat(3, 1fr); 
+            }
+        }
+        
+        /* Review Card (Icon Left, Text Right) */
+        .review-card {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+        }
+
+        /* Adjust icon size for tight mobile layout on game screen */
+        .game-icon {
+            width: 40px; /* เล็กลง */
+            height: 40px; /* เล็กลง */
+            margin: 0 auto; /* จัดตรงกลางในคอลัมน์ของมัน */
+        }
+        .text-card p {
+            font-size: 0.8rem; /* ลดขนาด font ในการ์ดข้อความ */
+            line-height: 1.1;
         }
     </style>
 </head>
@@ -87,11 +119,12 @@
         <h1 class="text-3xl md:text-4xl font-extrabold text-blue-800 text-center mb-4 md:mb-6 font-prompt drop-shadow-sm">
             เกมจับคู่ SDGs <span class="text-purple-700">|</span> <span class="text-pink-700">ทบทวนและทดสอบ</span> 🎯
         </h1>
-
+        
         <div id="review-screen">
             <h2 class="text-2xl font-bold text-center text-gray-700 mb-4 font-prompt">💡 ทบทวนข้อมูลที่ถูกต้อง (Key Answer)</h2>
             <div class="max-h-[60vh] overflow-y-auto pr-2 mb-6 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
-                <div id="key-answer-list" class="grid grid-cols-1 gap-2">
+                
+                <div id="review-grid" class="grid gap-2">
                     </div>
             </div>
             <button id="goToLoginButton" onclick="showLoginModal()" 
@@ -133,7 +166,6 @@
                 <div class="flex flex-col space-y-3" id="text-column"></div>
             </div>
         </div>
-
     </div>
 
     <div id="startModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
@@ -215,7 +247,6 @@
         const totalPairs = 17;
         const CIRCUMFERENCE = 2 * Math.PI * 16; 
 
-        // UPDATED: ข้อมูล SDG (ไม่มีตัวเลขนำหน้า)
         const sdgGoals = [
             { matchId: 'SDG1', text: 'ขจัดความยากจน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/1.png' },
             { matchId: 'SDG2', text: 'ขจัดความหิวโหย', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/2.png' },
@@ -239,7 +270,7 @@
         // --- DOM Elements Cache ---
         const DOM = {
             reviewScreen: document.getElementById('review-screen'),
-            keyAnswerList: document.getElementById('key-answer-list'),
+            keyAnswerList: document.getElementById('review-grid'), // Changed to review-grid
             gameScreen: document.getElementById('game-screen'),
             gameArea: document.getElementById('game-area'),
             imageColumn: document.getElementById('image-column'),
@@ -265,13 +296,14 @@
         
         // NEW: Populate Key Answer List
         function populateKeyAnswer() {
+            DOM.keyAnswerList.innerHTML = '';
             sdgGoals.forEach((item, index) => {
                 const div = document.createElement('div');
-                div.className = "flex items-center space-x-3 p-2 bg-white rounded-lg shadow-sm";
+                div.className = "review-card card p-2 rounded-xl shadow-md border border-gray-200"; // Added review-card class
                 div.innerHTML = `
-                    <img src="${item.iconUrl}" alt="${item.matchId}" class="h-10 w-10 object-contain flex-shrink-0">
+                    <img src="${item.iconUrl}" alt="${item.matchId}" class="h-10 w-10 object-contain flex-shrink-0 mr-3">
                     <p class="text-sm font-semibold text-gray-800">
-                        <span class="font-bold text-blue-600">Goal ${index + 1}:</span> ${item.text}
+                        <span class="font-bold text-blue-600">G${index + 1}:</span> ${item.text}
                     </p>
                 `;
                 DOM.keyAnswerList.appendChild(div);
@@ -284,13 +316,13 @@
             document.getElementById('employeeIdInput').focus();
         }
 
-        // UPDATED: Start Game Logic (Moved from Modal button)
+        // UPDATED: Start Game Logic
         function startGame() {
             DOM.startModal.classList.add('hidden');
             DOM.reviewScreen.classList.add('hidden');
             DOM.gameScreen.classList.remove('hidden');
             
-            // Generate Cards (ใช้ 1 คอลัมน์บนมือถือ 2 บน Desktop)
+            // Generate Cards (Shuffle both lists independently)
             const shuffledImageGoals = shuffleArray([...sdgGoals]);
             const shuffledTextGoals = shuffleArray([...sdgGoals]);
             DOM.imageColumn.innerHTML = '';
@@ -320,17 +352,16 @@
             card.dataset.matchId = item.matchId;
             card.onclick = () => selectCard(card, type);
             
-            // Tailwind Classes for Image Left, Text Right
-            let classes = "card p-3 rounded-xl shadow-md border border-white/80 transition-all duration-300 ease-in-out cursor-pointer hover:shadow-xl hover:bg-white/80 bg-white/60";
+            let classes = "card p-2 rounded-xl shadow-md border border-white/80 transition-all duration-300 ease-in-out cursor-pointer hover:shadow-xl hover:bg-white/80 bg-white/60";
 
             if (type === 'image') {
-                // Image Card: รูปอยู่ซ้ายสุด, เนื้อหาว่าง (ตามที่ร้องขอ)
-                classes += " justify-start";
-                card.innerHTML = `<img src="${item.iconUrl}" alt="${item.matchId}" class="h-14 w-14 object-contain flex-shrink-0">`;
+                // Image Card: Icon จัดตรงกลางในพื้นที่แคบๆ
+                classes += " justify-center text-center";
+                card.innerHTML = `<img src="${item.iconUrl}" alt="${item.matchId}" class="game-icon object-contain">`;
             } else {
-                // Text Card: ข้อความอยู่ซ้ายสุด (เมื่ออยู่ในคอลัมน์ขวา)
-                classes += " justify-start text-sm md:text-base font-semibold text-gray-800";
-                card.textContent = item.text;
+                // Text Card: ข้อความจัดซ้าย
+                classes += " text-card justify-start text-sm font-semibold text-gray-800";
+                card.innerHTML = `<p>${item.text}</p>`;
             }
 
             card.className = classes;
