@@ -54,7 +54,7 @@
             animation: shake 0.4s;
         }
         
-        /* KEY CHANGE: Force 2 equal columns on all screens */
+        /* Force 2 equal columns on all screens */
         #game-area {
             grid-template-columns: 1fr 1fr;
             gap: 10px;
@@ -257,13 +257,18 @@
         };
         
         let db = null;
-        // 🔴 การแก้ไขที่ 1: ลบการตรวจสอบที่ไม่จำเป็นออก 
-        if (firebaseConfig.projectId) { // ตรวจสอบแค่ว่ามี projectId ก็พอ
-             firebase.initializeApp(firebaseConfig);
-             db = firebase.firestore();
-        } else {
-             // ข้อความนี้ไม่น่าจะถูกแสดงอีก
-             console.warn("Firebase Config Not Set: Data saving and Leaderboard will be disabled.");
+        try {
+            // 🚀 พยายามเริ่มต้น Firebase
+            if (firebaseConfig.apiKey) {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                console.log("✅ Firebase & Firestore initialized successfully.");
+            } else {
+                console.warn("⚠️ Firebase Config is missing apiKey. Data saving disabled.");
+            }
+        } catch (error) {
+            console.error("❌ ERROR: Failed to initialize Firebase.", error);
+            db = null; // Set to null if initialization fails
         }
 
         // --- Game Setup ---
@@ -589,7 +594,6 @@
                 return;
             }
             
-            // 🔴 การแก้ไขที่ 2: ลบ .where('score', '==', totalPairs) ออกเพื่อให้แสดงผลทุกคะแนน
             // Query: Sort by score DESC, then by time ASC (Show top 20 regardless of perfect score)
             db.collection("sdgs_matching_game").doc("v1").collection("employee_results")
                 .orderBy('score', 'desc') 
@@ -600,13 +604,11 @@
                     DOM.leaderboardBody.innerHTML = ''; // Clear loading row
                     
                     if (querySnapshot.empty) {
-                        // เปลี่ยนข้อความเป็นให้ข้อมูลทั่วไปมากขึ้น
                         document.getElementById('leaderboard-note').textContent = "ยังไม่มีข้อมูลการเล่นในระบบ";
                         DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูลการเล่นในระบบ</td></tr>';
                         return;
                     }
 
-                    // 🔴 การแก้ไขที่ 3: เติมโค้ดที่ขาดหายไปในส่วนการแสดงผล
                     querySnapshot.forEach((doc, index) => {
                         const data = doc.data();
                         const rank = index + 1;
@@ -626,6 +628,10 @@
                         
                         DOM.leaderboardBody.appendChild(row);
                     });
+                    
+                    // หากมีข้อมูลแล้ว ให้เปลี่ยนคำอธิบายกลับไป
+                    document.getElementById('leaderboard-note').textContent = "เรียงตามคู่ที่ถูกต้องมากที่สุด และเวลาที่ใช้น้อยที่สุด";
+
                 })
                 .catch((error) => {
                     console.error("❌ Error fetching leaderboard:", error);
