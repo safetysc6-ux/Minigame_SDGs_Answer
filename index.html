@@ -121,7 +121,7 @@
             <h2 class="text-2xl font-bold text-center text-gray-700 mb-4 font-prompt">💡 ทบทวนข้อมูลที่ถูกต้อง (Key Answer)</h2>
             <div class="max-h-[50vh] overflow-y-auto pr-2 mb-4 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
                 <div id="review-grid" class="grid gap-2">
-                    </div>
+                </div>
             </div>
             
             <div class="space-y-3">
@@ -218,7 +218,7 @@
     <div id="leaderboardModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
         <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-md md:max-w-lg transform scale-100 transition duration-300">
             <h3 class="text-2xl font-extrabold text-center mb-4 font-prompt text-purple-700">🏆 บอร์ดคะแนนสูงสุด</h3>
-            <p class="text-center text-sm text-gray-600 mb-4">เรียงตามคู่ที่ถูกต้องมากที่สุด และเวลาที่ใช้น้อยที่สุด</p>
+            <p id="leaderboard-note" class="text-center text-sm text-gray-600 mb-4">เรียงตามคู่ที่ถูกต้องมากที่สุด และเวลาที่ใช้น้อยที่สุด</p>
             
             <div class="max-h-[65vh] overflow-y-auto pr-2 mb-5">
                 <table class="min-w-full divide-y divide-gray-300 rounded-lg overflow-hidden shadow-md">
@@ -248,19 +248,21 @@
         // --- Firebase Configuration (Update this section) ---
         const firebaseConfig = {
             apiKey: "AIzaSyDW5cb2dOtobBamiXt8Lpv_fM8XjV63qIQ",
-  authDomain: "minigame-sd-gs-answer.firebaseapp.com",
-  projectId: "minigame-sd-gs-answer",
-  storageBucket: "minigame-sd-gs-answer.firebasestorage.app",
-  messagingSenderId: "90854320017",
-  appId: "1:90854320017:web:1f5dbaf9c07847f3f95c30",
-  measurementId: "G-V4HB0GYF57"
-};
+            authDomain: "minigame-sd-gs-answer.firebaseapp.com",
+            projectId: "minigame-sd-gs-answer",
+            storageBucket: "minigame-sd-gs-answer.firebasestorage.app",
+            messagingSenderId: "90854320017",
+            appId: "1:90854320017:web:1f5dbaf9c07847f3f95c30",
+            measurementId: "G-V4HB0GYF57"
+        };
         
         let db = null;
-        if (firebaseConfig.projectId && !firebaseConfig.projectId.includes("<YOUR_")) {
+        // 🔴 การแก้ไขที่ 1: ลบการตรวจสอบที่ไม่จำเป็นออก 
+        if (firebaseConfig.projectId) { // ตรวจสอบแค่ว่ามี projectId ก็พอ
              firebase.initializeApp(firebaseConfig);
              db = firebase.firestore();
         } else {
+             // ข้อความนี้ไม่น่าจะถูกแสดงอีก
              console.warn("Firebase Config Not Set: Data saving and Leaderboard will be disabled.");
         }
 
@@ -587,9 +589,9 @@
                 return;
             }
             
-            // Query: Sort by score DESC, then by time ASC (Only perfect scores)
+            // 🔴 การแก้ไขที่ 2: ลบ .where('score', '==', totalPairs) ออกเพื่อให้แสดงผลทุกคะแนน
+            // Query: Sort by score DESC, then by time ASC (Show top 20 regardless of perfect score)
             db.collection("sdgs_matching_game").doc("v1").collection("employee_results")
-                .where('score', '==', totalPairs) // Only show perfect scores for ranking
                 .orderBy('score', 'desc') 
                 .orderBy('timeTaken', 'asc')
                 .limit(20) // Limit to top 20
@@ -598,43 +600,43 @@
                     DOM.leaderboardBody.innerHTML = ''; // Clear loading row
                     
                     if (querySnapshot.empty) {
-                        DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">ยังไม่มีผู้ทำคะแนนสมบูรณ์</td></tr>';
+                        // เปลี่ยนข้อความเป็นให้ข้อมูลทั่วไปมากขึ้น
+                        document.getElementById('leaderboard-note').textContent = "ยังไม่มีข้อมูลการเล่นในระบบ";
+                        DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูลการเล่นในระบบ</td></tr>';
                         return;
                     }
 
+                    // 🔴 การแก้ไขที่ 3: เติมโค้ดที่ขาดหายไปในส่วนการแสดงผล
                     querySnapshot.forEach((doc, index) => {
                         const data = doc.data();
                         const rank = index + 1;
                         const row = document.createElement('tr');
-                        row.className = rank <= 3 ? 'bg-yellow-50/70 font-bold' : 'hover:bg-gray-50';
                         
-                        let rankIcon = rank;
-                        if (rank === 1) rankIcon = '🥇';
-                        else if (rank === 2) rankIcon = '🥈';
-                        else if (rank === 3) rankIcon = '🥉';
-
+                        // Highlight rank 1
+                        const rankClass = rank === 1 ? 'bg-yellow-100/70 font-extrabold text-lg' : 'hover:bg-gray-50';
+                        
+                        row.className = `divide-x divide-gray-200 ${rankClass}`;
                         row.innerHTML = `
-                            <td class="px-2 py-2 text-left text-sm whitespace-nowrap">${rankIcon}</td>
-                            <td class="px-2 py-2 text-left text-sm whitespace-nowrap text-blue-600">${data.employeeId || 'N/A'}</td>
-                            <td class="px-2 py-2 text-center text-sm whitespace-nowrap text-green-600">${data.score}</td>
-                            <td class="px-2 py-2 text-center text-sm whitespace-nowrap text-indigo-600">${data.timeTaken}</td>
-                            <td class="px-2 py-2 text-center text-sm whitespace-nowrap text-red-500 hidden sm:table-cell">${data.mistakesCount}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-left text-xs font-bold text-gray-800">${rank}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-left text-xs text-blue-600 font-bold">${data.employeeId || '-'}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-center text-xs font-semibold text-green-600">${data.score}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-center text-xs font-semibold text-indigo-600">${data.timeTaken}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-center text-xs text-red-500 hidden sm:table-cell">${data.mistakesCount}</td>
                         `;
+                        
                         DOM.leaderboardBody.appendChild(row);
                     });
                 })
                 .catch((error) => {
-                    console.error("Error fetching leaderboard: ", error);
-                    DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-600">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                    console.error("❌ Error fetching leaderboard:", error);
+                    DOM.leaderboardBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-600">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}. กรุณาตรวจสอบ Console (F12)</td></tr>`;
                 });
         }
-
+        
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             populateKeyAnswer();
-            updateTimerDisplay(); 
         });
     </script>
 </body>
 </html>
-
