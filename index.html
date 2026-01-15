@@ -6,103 +6,51 @@
     <title>เกมจับคู่ SDGs | Final Version</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
     
-    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
-
     <style>
-        /* Custom styles */
         :root {
             --color-highlight: #2563EB;
             --color-correct: #22C55E;
             --color-error: #EF4444;
         }
+        body { font-family: 'Inter', 'Prompt', sans-serif; }
 
-        body {
-            font-family: 'Inter', 'Prompt', sans-serif;
-        }
-
-        /* Glassmorphism Effect */
+        /* Glassmorphism */
         .glass-panel {
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         }
         
-        /* Card Styling & States */
+        /* Card Styles */
         .card {
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            min-height: 70px; 
-            display: flex; 
-            align-items: center;
-            background-color: white; 
-            text-align: left;
+            min-height: 70px; display: flex; align-items: center;
+            background-color: white; text-align: left;
         }
         .selected {
             border-color: var(--color-highlight) !important;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
             transform: scale(1.02);
         }
-        .matched {
-            pointer-events: none;
-            opacity: 0.8;
-        }
-        .incorrect {
-            animation: shake 0.4s;
-        }
+        .matched { pointer-events: none; opacity: 0.8; }
+        .incorrect { animation: shake 0.4s; }
         
-        /* Force 2 equal columns on all screens */
-        #game-area {
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+        #game-area { grid-template-columns: 1fr 1fr; gap: 10px; }
         
-        /* Review Card (Icon Left, Text Right) */
-        .review-card {
-            display: flex;
-            align-items: center;
-            padding: 8px;
-        }
+        /* Review Screen Grid */
+        #review-grid { grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 640px) { #review-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1024px) { #review-grid { grid-template-columns: repeat(3, 1fr); } }
         
-        /* Grid settings for Review Screen */
-        #review-grid {
-            grid-template-columns: 1fr; 
-            gap: 12px;
-        }
-        @media (min-width: 640px) { 
-            #review-grid {
-                grid-template-columns: repeat(2, 1fr); 
-            }
-        }
-        @media (min-width: 1024px) { 
-             #review-grid {
-                grid-template-columns: repeat(3, 1fr); 
-            }
-        }
-        
-        .game-icon {
-            width: 40px; 
-            height: 40px; 
-            margin: 0 auto; 
-        }
-        .text-card p {
-            font-size: 0.8rem; 
-            line-height: 1.1;
-        }
+        .game-icon { width: 40px; height: 40px; margin: 0 auto; }
+        .text-card p { font-size: 0.8rem; line-height: 1.1; }
 
-        /* --- Timer/Progress Ring Fix --- */
-        .progress-ring { 
-            position: relative; 
-            width: 36px; /* Reduced size */
-            height: 36px; /* Reduced size */
-            font-size: 0.8rem; /* Adjusted font size */
-        }
-        .progress-ring-fg { 
-            transition: stroke-dashoffset 1s linear; 
-        }
+        /* Timer Ring */
+        .progress-ring { position: relative; width: 36px; height: 36px; font-size: 0.8rem; }
+        .progress-ring-fg { transition: stroke-dashoffset 1s linear; }
 
         @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
     </style>
@@ -114,33 +62,23 @@
     <div id="main-container" class="relative z-10 w-full max-w-2xl lg:max-w-4xl glass-panel rounded-2xl p-4 md:p-8 text-gray-900 animate-in fade-in duration-500">
         
         <h1 class="text-3xl md:text-4xl font-extrabold text-blue-800 text-center mb-4 md:mb-6 font-prompt drop-shadow-sm">
-            เกมจับคู่ SDGs <span class="text-purple-700">|</span> <span class="text-pink-700"></span> 🎯
+            เกมจับคู่ SDGs <span class="text-purple-700">|</span> 🎯
         </h1>
         
         <div id="review-screen">
-            <h2 class="text-2xl font-bold text-center text-gray-700 mb-4 font-prompt">💡 ทบทวนข้อมูลที่ถูกต้อง (Key Answer)</h2>
+            <h2 class="text-2xl font-bold text-center text-gray-700 mb-4 font-prompt">💡 ทบทวนข้อมูล (Key Answer)</h2>
             <div class="max-h-[50vh] overflow-y-auto pr-2 mb-4 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
-                <div id="review-grid" class="grid gap-2">
-                </div>
+                <div id="review-grid" class="grid gap-2"></div>
             </div>
             
-            <div class="space-y-3">
-                <button id="goToLoginButton" onclick="showLoginModal()" 
-                        class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    <span>เริ่มเกมทดสอบ</span>
-                </button>
-                <button id="showLeaderboardButton" onclick="showLeaderboard()" 
-                        class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    <span>บอร์ดคะแนน (Leaderboard)</span>
-                </button>
-            </div>
+            <button id="goToLoginButton" onclick="showLoginModal()" 
+                    class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
+                <span>เริ่มเกมทดสอบ</span>
+            </button>
         </div>
 
         <div id="game-screen" class="hidden">
             <div class="flex justify-between items-center bg-white/70 rounded-xl p-3 md:p-5 mb-4 md:mb-6 shadow-lg border border-white/80 text-sm md:text-base">
-                
                 <div class="flex items-center space-x-2">
                     <div class="progress-ring">
                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36"> 
@@ -150,14 +88,10 @@
                         <span id="timer-display" class="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600">120s</span>
                     </div>
                 </div>
-
                 <div class="flex items-center space-x-1 md:space-x-3">
-                    <svg class="w-5 h-5 md:w-7 md:h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0a9 9 0 0118 0z"></path></svg>
                     <span class="font-bold text-gray-800">ถูก: <span id="matched-count" class="text-green-600">0/17</span></span>
                 </div>
-
                 <div class="flex items-center space-x-1 md:space-x-3">
-                    <svg class="w-5 h-5 md:w-7 md:h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0a9 9 0 0118 0z"></path></svg>
                     <span class="font-bold text-gray-800">ผิด: <span id="mistakes-count" class="text-red-500">0</span></span>
                 </div>
             </div>
@@ -174,116 +108,45 @@
     <div id="startModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
         <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-xs md:max-w-sm transform scale-100 transition duration-300">
             <h3 class="text-2xl font-extrabold text-blue-700 text-center mb-4 font-prompt">🔑 ใส่รหัสพนักงาน</h3>
-            <p class="text-gray-700 text-center mb-5 text-sm md:text-base">กรุณากรอกรหัสพนักงานของคุณเพื่อเริ่มเกม</p>
-            
             <div class="mb-5">
-                <label for="employeeIdInput" class="block text-gray-700 text-sm font-bold mb-2 text-left">รหัสพนักงาน (ID):</label>
                 <input type="text" id="employeeIdInput" 
-                       class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 bg-white/70 border-gray-300"
+                       class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white/70 border-gray-300"
                        placeholder="เช่น E1001" maxlength="10">
-                <p id="idError" class="text-red-600 text-sm mt-2 text-left hidden">⚠️ รหัสพนักงานห้ามว่างเปล่า</p>
+                <p id="idError" class="text-red-600 text-sm mt-2 text-left hidden">⚠️ กรุณากรอกรหัสพนักงาน</p>
             </div>
-
-            <button id="startButton" onclick="checkEmployeeId()" 
-                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl focus:outline-none focus:shadow-outline transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-base">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span>เริ่มเกมทดสอบ</span>
-            </button>
+            <button onclick="checkEmployeeId()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg">เริ่มเกม</button>
         </div>
     </div>
     
     <div id="resultModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
         <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-xs md:max-w-md transform scale-100 transition duration-300">
             <h3 id="result-header" class="text-2xl font-extrabold text-center mb-4 font-prompt text-green-700">🎉 สรุปผลการทดสอบ</h3>
-            
             <div class="bg-blue-50/70 rounded-xl p-4 mb-5 border border-blue-200 text-left text-sm md:text-base">
-                <p class="text-gray-800 font-medium mb-1">รหัสพนักงาน: <span id="final-employee-id" class="text-blue-600 font-bold"></span></p>
-                <p class="text-gray-800 font-medium mb-1">สถานะ: <span id="final-status-text" class="text-green-600 font-bold"></span></p>
-                <p class="text-gray-800 font-medium mb-1">เวลาที่ใช้: <span id="final-time-taken" class="text-indigo-600 font-bold"></span> วินาที</p>
-                <p class="text-gray-800 font-medium mb-1">คู่ที่จับถูก: <span id="final-matched-score" class="text-green-600 font-bold"></span> คู่</p>
-                <p class="text-gray-800 font-medium">คู่ที่จับผิด: <span id="final-mistakes" class="text-red-600 font-bold"></span> ครั้ง</p>
+                <p>รหัสพนักงาน: <span id="final-employee-id" class="text-blue-600 font-bold"></span></p>
+                <p>สถานะ: <span id="final-status-text" class="text-green-600 font-bold"></span></p>
+                <p>เวลาที่ใช้: <span id="final-time-taken" class="text-indigo-600 font-bold"></span> วินาที</p>
+                <p>คะแนน: <span id="final-matched-score" class="text-green-600 font-bold"></span> คู่</p>
             </div>
-            
             <div class="space-y-3">
-                <button id="okButton" onclick="saveAndGoToHome()" 
-                        class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-base">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span>ตกลง (บันทึกผลและกลับหน้าแรก)</span>
+                <button id="okButton" onclick="saveAndGoToHome()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg">
+                    ตกลง (บันทึกผล)
                 </button>
-                <p id="save-status" class="text-center text-xs h-3 md:h-4"></p>
+                <p id="save-status" class="text-center text-xs h-3 font-bold"></p>
             </div>
-        </div>
-    </div>
-    
-    <div id="leaderboardModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
-        <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-md md:max-w-lg transform scale-100 transition duration-300">
-            <h3 class="text-2xl font-extrabold text-center mb-4 font-prompt text-purple-700">🏆 บอร์ดคะแนนสูงสุด</h3>
-            <p id="leaderboard-note" class="text-center text-sm text-gray-600 mb-4">เรียงตามคู่ที่ถูกต้องมากที่สุด และเวลาที่ใช้น้อยที่สุด</p>
-            
-            <div class="max-h-[65vh] overflow-y-auto pr-2 mb-5">
-                <table class="min-w-full divide-y divide-gray-300 rounded-lg overflow-hidden shadow-md">
-                    <thead class="bg-gray-200 sticky top-0">
-                        <tr>
-                            <th class="px-2 py-2 text-left text-xs font-bold text-gray-600 uppercase w-10">#</th>
-                            <th class="px-2 py-2 text-left text-xs font-bold text-gray-600 uppercase">รหัสพนักงาน</th>
-                            <th class="px-2 py-2 text-center text-xs font-bold text-gray-600 uppercase">คู่ถูก</th>
-                            <th class="px-2 py-2 text-center text-xs font-bold text-gray-600 uppercase">เวลา (วิ)</th>
-                            <th class="px-2 py-2 text-center text-xs font-bold text-gray-600 uppercase hidden sm:table-cell">ผิด</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboard-body" class="bg-white divide-y divide-gray-200">
-                        <tr id="loading-row"><td colspan="5" class="text-center py-4 text-gray-500">กำลังโหลด...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <button onclick="hideLeaderboard()" 
-                    class="w-full bg-gradient-to-r from-gray-500 to-gray-700 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-base">
-                <span>ปิด</span>
-            </button>
         </div>
     </div>
 
     <script>
-        // --- Firebase Configuration (Update this section) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDW5cb2dOtobBamiXt8Lpv_fM8XjV63qIQ",
-            authDomain: "minigame-sd-gs-answer.firebaseapp.com",
-            projectId: "minigame-sd-gs-answer",
-            storageBucket: "minigame-sd-gs-answer.firebasestorage.app",
-            messagingSenderId: "90854320017",
-            appId: "1:90854320017:web:1f5dbaf9c07847f3f95c30",
-            measurementId: "G-V4HB0GYF57"
-        };
-        
-        let db = null;
-        try {
-            // 🚀 พยายามเริ่มต้น Firebase
-            if (firebaseConfig.apiKey) {
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                console.log("✅ Firebase & Firestore initialized successfully.");
-            } else {
-                console.warn("⚠️ Firebase Config is missing apiKey. Data saving disabled.");
-            }
-        } catch (error) {
-            console.error("❌ ERROR: Failed to initialize Firebase.", error);
-            db = null; // Set to null if initialization fails
-        }
+        // --------------------------------------------------------
+        // 🔴🔴🔴 นำ URL ที่ได้จาก Google Apps Script มาวางตรงนี้ 🔴🔴🔴
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRKO8NPxsyKof7_PEeiRvKfrHuAYkkt6Ld6-5Sd_txQbmNmNfkEjmIBL6SuYXS2wE_Mw/exec"; 
+        // ตัวอย่าง: "https://script.google.com/macros/s/AKfycbw.../exec"
+        // --------------------------------------------------------
 
-        // --- Game Setup ---
+        // Game Configuration
         const TIME_LIMIT = 120;
-        let employeeId = ''; 
-        let gameTimer;
-        let timeRemaining = TIME_LIMIT;
-        let selectedImageCard = null;
-        let selectedTextCard = null;
-        let matchedPairs = 0;
-        let mistakesCount = 0;
         const totalPairs = 17;
-        // The r=16 in circle means diameter is 32. C = 2 * Pi * r = 100.53
         const CIRCUMFERENCE = 2 * Math.PI * 16; 
-
         const sdgGoals = [
             { matchId: 'SDG1', text: 'ขจัดความยากจน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/1.png' },
             { matchId: 'SDG2', text: 'ขจัดความหิวโหย', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/2.png' },
@@ -293,25 +156,31 @@
             { matchId: 'SDG6', text: 'น้ำสะอาดและการสุขาภิบาล', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/6.png' },
             { matchId: 'SDG7', text: 'พลังงานสะอาดที่เข้าถึงได้', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/7.png' },
             { matchId: 'SDG8', text: 'งานที่ดีและการเติบโตทางเศรษฐกิจ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/8.png' },
-            { matchId: 'SDG9', text: 'อุตสาหกรรม นวัตกรรม โครงสร้างพื้นฐาน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/9.png' },
+            { matchId: 'SDG9', text: 'อุตสาหกรรม นวัตกรรม', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/9.png' },
             { matchId: 'SDG10', text: 'ลดความเหลื่อมล้ำ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/10.png' },
             { matchId: 'SDG11', text: 'เมืองและชุมชนที่ยั่งยืน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/11.png' },
             { matchId: 'SDG12', text: 'การบริโภคและการผลิตที่ยั่งยืน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/12.png' },
-            { matchId: 'SDG13', text: 'การรับมือการเปลี่ยนแปลงสภาพภูมิอากาศ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/13.png' },
+            { matchId: 'SDG13', text: 'การรับมือโลกรวน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/13.png' },
             { matchId: 'SDG14', text: 'ทรัพยากรทางทะเล', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/14.png' },
             { matchId: 'SDG15', text: 'ระบบนิเวศบนบก', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/15.png' },
-            { matchId: 'SDG16', text: 'สังคมสงบสุข ยุติธรรม ไม่แบ่งแยก', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/16.png' },
-            { matchId: 'SDG17', text: 'ความร่วมมือเพื่อการพัฒนาที่ยั่งยืน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/17.png' }
+            { matchId: 'SDG16', text: 'สังคมสงบสุข ยุติธรรม', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/16.png' },
+            { matchId: 'SDG17', text: 'ความร่วมมือเพื่อการพัฒนา', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/17.png' }
         ];
 
-        // --- DOM Elements Cache ---
+        // State Variables
+        let employeeId = ''; 
+        let gameTimer;
+        let timeRemaining = TIME_LIMIT;
+        let selectedImageCard = null;
+        let selectedTextCard = null;
+        let matchedPairs = 0;
+        let mistakesCount = 0;
+
+        // DOM Elements
         const DOM = {
             reviewScreen: document.getElementById('review-screen'),
             keyAnswerList: document.getElementById('review-grid'), 
             gameScreen: document.getElementById('game-screen'),
-            gameArea: document.getElementById('game-area'),
-            imageColumn: document.getElementById('image-column'),
-            textColumn: document.getElementById('text-column'),
             timerDisplay: document.getElementById('timer-display'),
             timerCircle: document.getElementById('timer-circle'),
             mistakesCount: document.getElementById('mistakes-count'),
@@ -320,26 +189,18 @@
             startModal: document.getElementById('startModal'),
             resultModal: document.getElementById('resultModal'),
             okButton: document.getElementById('okButton'), 
-            leaderboardModal: document.getElementById('leaderboardModal'),
-            leaderboardBody: document.getElementById('leaderboard-body'),
+            imageColumn: document.getElementById('image-column'),
+            textColumn: document.getElementById('text-column')
         };
 
-        // --- Core Functions ---
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-        
+        // --- Core Game Functions ---
         function populateKeyAnswer() {
             DOM.keyAnswerList.innerHTML = '';
             sdgGoals.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = "review-card card p-2 rounded-xl shadow-md border border-gray-200";
                 div.innerHTML = `
-                    <img src="${item.iconUrl}" alt="${item.matchId}" class="h-10 w-10 object-contain flex-shrink-0 mr-3">
+                    <img src="${item.iconUrl}" class="h-10 w-10 object-contain flex-shrink-0 mr-3">
                     <p class="text-sm font-semibold text-gray-800">
                         <span class="font-bold text-blue-600">G${index + 1}:</span> ${item.text}
                     </p>
@@ -347,10 +208,22 @@
                 DOM.keyAnswerList.appendChild(div);
             });
         }
-        
+
         function showLoginModal() {
             DOM.startModal.classList.remove('hidden');
             document.getElementById('employeeIdInput').focus();
+        }
+
+        function checkEmployeeId() {
+            const idInput = document.getElementById('employeeIdInput');
+            const idValue = idInput.value.trim().toUpperCase();
+            if (!idValue) {
+                document.getElementById('idError').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('idError').classList.add('hidden');
+            employeeId = idValue;
+            startGame();
         }
 
         function startGame() {
@@ -358,292 +231,188 @@
             DOM.reviewScreen.classList.add('hidden');
             DOM.gameScreen.classList.remove('hidden');
             
-            // Generate Cards (Shuffle both lists independently)
-            const shuffledImageGoals = shuffleArray([...sdgGoals]);
-            const shuffledTextGoals = shuffleArray([...sdgGoals]);
+            const shuffledImg = [...sdgGoals].sort(() => Math.random() - 0.5);
+            const shuffledText = [...sdgGoals].sort(() => Math.random() - 0.5);
+            
             DOM.imageColumn.innerHTML = '';
             DOM.textColumn.innerHTML = '';
             
-            shuffledImageGoals.forEach(item => {
-                const card = createCard(item, 'image');
-                DOM.imageColumn.appendChild(card);
-            });
+            shuffledImg.forEach(item => DOM.imageColumn.appendChild(createCard(item, 'image')));
+            shuffledText.forEach(item => DOM.textColumn.appendChild(createCard(item, 'text')));
 
-            shuffledTextGoals.forEach(item => {
-                const card = createCard(item, 'text');
-                DOM.textColumn.appendChild(card);
-            });
-
-            // Start Timer
-            matchedPairs = 0;
-            mistakesCount = 0;
-            timeRemaining = TIME_LIMIT;
+            matchedPairs = 0; mistakesCount = 0; timeRemaining = TIME_LIMIT;
             updateTimerDisplay();
             clearInterval(gameTimer);
             gameTimer = setInterval(updateTimer, 1000);
         }
-        
+
         function createCard(item, type) {
             const card = document.createElement('div');
             card.dataset.matchId = item.matchId;
             card.onclick = () => selectCard(card, type);
-            
-            let classes = "card p-2 rounded-xl shadow-md border border-white/80 transition-all duration-300 ease-in-out cursor-pointer hover:shadow-xl hover:bg-white/80 bg-white/60";
-
+            let classes = "card p-2 rounded-xl shadow-md border border-white/80 cursor-pointer hover:shadow-xl hover:bg-white/80 bg-white/60";
             if (type === 'image') {
                 classes += " justify-center text-center";
-                card.innerHTML = `<img src="${item.iconUrl}" alt="${item.matchId}" class="game-icon object-contain">`;
+                card.innerHTML = `<img src="${item.iconUrl}" class="game-icon object-contain">`;
             } else {
                 classes += " text-card justify-start text-sm font-semibold text-gray-800";
                 card.innerHTML = `<p>${item.text}</p>`;
             }
-
             card.className = classes;
             return card;
+        }
+
+        function selectCard(card, type) {
+            if (card.classList.contains('matched') || card.classList.contains('selected')) return;
+            
+            const current = type === 'image' ? selectedImageCard : selectedTextCard;
+            if (current) current.classList.remove('selected');
+            
+            if (type === 'image') selectedImageCard = card;
+            else selectedTextCard = card;
+            
+            card.classList.add('selected');
+
+            if (selectedImageCard && selectedTextCard) {
+                document.getElementById('game-area').style.pointerEvents = 'none'; // Lock clicks
+                setTimeout(checkMatch, 600);
+            }
+        }
+
+        function checkMatch() {
+            const c1 = selectedImageCard;
+            const c2 = selectedTextCard;
+            
+            if (c1.dataset.matchId === c2.dataset.matchId) {
+                // Matched
+                [c1, c2].forEach(c => {
+                    c.classList.remove('selected');
+                    c.classList.add('matched', 'bg-green-100', 'border-green-500');
+                });
+                matchedPairs++;
+                DOM.gameMessage.innerHTML = `<span class="text-green-600 font-bold">✅ ถูกต้อง!</span>`;
+                if (matchedPairs === totalPairs) endGame(false);
+            } else {
+                // Mismatch
+                mistakesCount++;
+                [c1, c2].forEach(c => {
+                    c.classList.add('incorrect', 'bg-red-100', 'border-red-500');
+                });
+                DOM.gameMessage.innerHTML = `<span class="text-red-600 font-bold">❌ ผิด!</span>`;
+                setTimeout(() => {
+                    [c1, c2].forEach(c => c.classList.remove('selected', 'incorrect', 'bg-red-100', 'border-red-500'));
+                    DOM.gameMessage.innerHTML = "";
+                }, 800);
+            }
+            
+            selectedImageCard = null; selectedTextCard = null;
+            document.getElementById('game-area').style.pointerEvents = 'auto'; // Unlock
+            updateTimerDisplay();
         }
 
         function updateTimer() {
             timeRemaining--;
             updateTimerDisplay();
-
             if (timeRemaining <= 0) {
                 clearInterval(gameTimer);
-                endGame(true); 
+                endGame(true);
             }
         }
 
         function updateTimerDisplay() {
-            const percentage = (timeRemaining / TIME_LIMIT) * 100;
-            const offset = CIRCUMFERENCE - (percentage / 100) * CIRCUMFERENCE;
+            const pct = (timeRemaining / TIME_LIMIT) * 100;
+            const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
+            const color = timeRemaining <= 30 ? '#EF4444' : '#2563EB';
             
-            const color = timeRemaining <= 30 ? 'rgb(239, 68, 68)' : 'rgb(37, 99, 235)';
             DOM.timerCircle.style.stroke = color;
             DOM.timerCircle.style.strokeDashoffset = offset;
-            
             DOM.timerDisplay.textContent = `${timeRemaining}s`;
             DOM.timerDisplay.style.color = color;
-
+            
             DOM.mistakesCount.textContent = mistakesCount;
             DOM.matchedCount.textContent = `${matchedPairs}/${totalPairs}`;
-        }
-
-        function selectCard(card, type) {
-            if (card.classList.contains('matched')) return;
-
-            const currentSelection = type === 'image' ? selectedImageCard : selectedTextCard;
-            if (currentSelection) {
-                currentSelection.classList.remove('selected', 'bg-red-300/50', 'text-white');
-            }
-            
-            if (type === 'image') { selectedImageCard = card; }
-            else { selectedTextCard = card; }
-            
-            card.classList.add('selected');
-
-            if (selectedImageCard && selectedTextCard) {
-                disableClicks(true);
-                setTimeout(checkMatch, 800);
-            }
-        }
-
-        function disableClicks(status) {
-             const cards = document.querySelectorAll('.card:not(.matched)');
-             cards.forEach(card => card.style.pointerEvents = status ? 'none' : 'auto');
-        }
-
-        function checkMatch() {
-            const card1 = selectedImageCard;
-            const card2 = selectedTextCard;
-            
-            if (!card1 || !card2) return;
-
-            if (card1.dataset.matchId === card2.dataset.matchId) {
-                card1.classList.add('matched', 'bg-green-300/70', 'text-white', 'shadow-green-500/50');
-                card2.classList.add('matched', 'bg-green-300/70', 'text-white', 'shadow-green-500/50');
-                card1.classList.remove('selected', 'hover:bg-white/80');
-                card2.classList.remove('selected', 'hover:bg-white/80');
-                matchedPairs++;
-                DOM.gameMessage.innerHTML = `<span class="text-green-600 font-bold">✅ ถูกต้อง!</span>`;
-                
-                if (matchedPairs === totalPairs) {
-                    endGame(false); 
-                }
-            } else {
-                mistakesCount++;
-                card1.classList.add('incorrect', 'bg-red-300/70', 'text-white');
-                card2.classList.add('incorrect', 'bg-red-300/70', 'text-white');
-                DOM.gameMessage.innerHTML = `<span class="text-red-600 font-bold">❌ ผิด!</span>`;
-
-                setTimeout(() => {
-                    card1.classList.remove('selected', 'incorrect', 'bg-red-300/70', 'text-white');
-                    card2.classList.remove('selected', 'incorrect', 'bg-red-300/70', 'text-white');
-                    DOM.gameMessage.innerHTML = "";
-                }, 800);
-            }
-            
-            selectedImageCard = null;
-            selectedTextCard = null;
-            disableClicks(false);
-            updateTimerDisplay();
-        }
-
-        function checkEmployeeId() {
-            const idInput = document.getElementById('employeeIdInput');
-            const idValue = idInput.value.trim().toUpperCase();
-            
-            if (!idValue) {
-                document.getElementById('idError').classList.remove('hidden');
-                idInput.focus();
-                return;
-            }
-            
-            document.getElementById('idError').classList.add('hidden');
-            employeeId = idValue;
-            startGame();
         }
 
         function endGame(isTimeout) {
             clearInterval(gameTimer);
             DOM.gameScreen.classList.add('hidden');
-            disableClicks(true);
             
-            const totalTimeTaken = isTimeout ? TIME_LIMIT : TIME_LIMIT - timeRemaining;
+            const timeUsed = isTimeout ? TIME_LIMIT : TIME_LIMIT - timeRemaining;
             
-            // Update Result Modal
+            // Populate Result
             document.getElementById('final-employee-id').textContent = employeeId;
-            document.getElementById('final-time-taken').textContent = totalTimeTaken;
+            document.getElementById('final-time-taken').textContent = timeUsed;
             document.getElementById('final-matched-score').textContent = matchedPairs;
-            document.getElementById('final-mistakes').textContent = mistakesCount;
-            document.getElementById('save-status').textContent = '';
             
-            DOM.okButton.classList.remove('opacity-60', 'cursor-not-allowed'); // Enable button
-
+            const header = document.getElementById('result-header');
+            const status = document.getElementById('final-status-text');
+            
             if (isTimeout && matchedPairs < totalPairs) {
-                document.getElementById('result-header').textContent = "🚨 หมดเวลา!";
-                document.getElementById('result-header').classList.replace('text-green-700', 'text-red-700');
-                document.getElementById('final-status-text').textContent = "ไม่สำเร็จ (หมดเวลา)";
-                document.getElementById('final-status-text').classList.replace('text-green-600', 'text-red-600');
+                header.textContent = "🚨 หมดเวลา!"; header.className = "text-2xl font-extrabold text-center mb-4 font-prompt text-red-700";
+                status.textContent = "ไม่สำเร็จ"; status.className = "text-red-600 font-bold";
             } else {
-                document.getElementById('result-header').textContent = "🎉 ยอดเยี่ยม!";
-                document.getElementById('result-header').classList.replace('text-red-700', 'text-green-700');
-                document.getElementById('final-status-text').textContent = "สำเร็จ";
-                document.getElementById('final-status-text').classList.replace('text-red-600', 'text-green-600');
+                header.textContent = "🎉 ยอดเยี่ยม!"; header.className = "text-2xl font-extrabold text-center mb-4 font-prompt text-green-700";
+                status.textContent = "สำเร็จ"; status.className = "text-green-600 font-bold";
             }
-
+            
+            DOM.okButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('save-status').textContent = "";
             DOM.resultModal.classList.remove('hidden');
         }
-        
+
+        // --- 🟢 Save to Google Sheet Function ---
         function saveAndGoToHome() {
-            if (DOM.okButton.classList.contains('opacity-60')) return; // Check if already disabled/saving
-
-            document.getElementById('save-status').textContent = "กำลังบันทึก...";
-            DOM.okButton.classList.add('opacity-60', 'cursor-not-allowed');
-
-            const timeForDatabase = timeRemaining <= 0 ? TIME_LIMIT : TIME_LIMIT - timeRemaining;
+            if (DOM.okButton.classList.contains('opacity-50')) return;
             
-            const gameData = {
-                employeeId: employeeId,
-                score: matchedPairs, 
-                timeTaken: timeForDatabase,
-                mistakesCount: mistakesCount,
-                isTimeout: timeRemaining <= 0 && matchedPairs < totalPairs,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            if (!db) {
-                 document.getElementById('save-status').innerHTML = `<span class="text-red-600">⚠️ ไม่สามารถบันทึกได้: Firebase Config ไม่ถูกต้อง</span>`;
-                 // Fallback: Go back to home anyway
-                 setTimeout(goToHome, 1000); 
-                 return;
-            }
-
-
-            db.collection("sdgs_matching_game").doc("v1").collection("employee_results").add(gameData)
-                .then(() => {
-                    document.getElementById('save-status').innerHTML = `<span class="text-green-600">✅ บันทึกผลสำเร็จ!</span>`;
-                    setTimeout(goToHome, 800); 
-                })
-                .catch((error) => {
-                    document.getElementById('save-status').innerHTML = `<span class="text-red-600">❌ บันทึกผิดพลาด: ${error.message}</span>`;
-                    setTimeout(goToHome, 2000); // Go back after showing error
-                });
-        }
-        
-        function goToHome() {
-             DOM.resultModal.classList.add('hidden');
-             DOM.reviewScreen.classList.remove('hidden');
-             // Reset input field if needed
-             document.getElementById('employeeIdInput').value = '';
-        }
-
-        // --- Leaderboard Functions ---
-        function showLeaderboard() {
-            DOM.leaderboardModal.classList.remove('hidden');
-            fetchLeaderboardData();
-        }
-
-        function hideLeaderboard() {
-            DOM.leaderboardModal.classList.add('hidden');
-        }
-
-        function fetchLeaderboardData() {
-            DOM.leaderboardBody.innerHTML = '<tr id="loading-row"><td colspan="5" class="text-center py-4 text-gray-500">กำลังโหลด...</td></tr>';
-            
-            if (!db) {
-                DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-600">⚠️ ไม่สามารถโหลดบอร์ดคะแนนได้: Firebase Config ไม่ถูกต้อง</td></tr>';
+            if (GOOGLE_SCRIPT_URL.includes("วาง_URL")) {
+                alert("กรุณาใส่ Web App URL ในโค้ดก่อนครับ");
                 return;
             }
-            
-            // Query: Sort by score DESC, then by time ASC (Show top 20 regardless of perfect score)
-            db.collection("sdgs_matching_game").doc("v1").collection("employee_results")
-                .orderBy('score', 'desc') 
-                .orderBy('timeTaken', 'asc')
-                .limit(20) // Limit to top 20
-                .get()
-                .then((querySnapshot) => {
-                    DOM.leaderboardBody.innerHTML = ''; // Clear loading row
-                    
-                    if (querySnapshot.empty) {
-                        document.getElementById('leaderboard-note').textContent = "ยังไม่มีข้อมูลการเล่นในระบบ";
-                        DOM.leaderboardBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">ยังไม่มีข้อมูลการเล่นในระบบ</td></tr>';
-                        return;
-                    }
 
-                    querySnapshot.forEach((doc, index) => {
-                        const data = doc.data();
-                        const rank = index + 1;
-                        const row = document.createElement('tr');
-                        
-                        // Highlight rank 1
-                        const rankClass = rank === 1 ? 'bg-yellow-100/70 font-extrabold text-lg' : 'hover:bg-gray-50';
-                        
-                        row.className = `divide-x divide-gray-200 ${rankClass}`;
-                        row.innerHTML = `
-                            <td class="px-2 py-2 whitespace-nowrap text-left text-xs font-bold text-gray-800">${rank}</td>
-                            <td class="px-2 py-2 whitespace-nowrap text-left text-xs text-blue-600 font-bold">${data.employeeId || '-'}</td>
-                            <td class="px-2 py-2 whitespace-nowrap text-center text-xs font-semibold text-green-600">${data.score}</td>
-                            <td class="px-2 py-2 whitespace-nowrap text-center text-xs font-semibold text-indigo-600">${data.timeTaken}</td>
-                            <td class="px-2 py-2 whitespace-nowrap text-center text-xs text-red-500 hidden sm:table-cell">${data.mistakesCount}</td>
-                        `;
-                        
-                        DOM.leaderboardBody.appendChild(row);
-                    });
-                    
-                    // หากมีข้อมูลแล้ว ให้เปลี่ยนคำอธิบายกลับไป
-                    document.getElementById('leaderboard-note').textContent = "เรียงตามคู่ที่ถูกต้องมากที่สุด และเวลาที่ใช้น้อยที่สุด";
+            document.getElementById('save-status').textContent = "กำลังบันทึกข้อมูล...";
+            document.getElementById('save-status').className = "text-center text-xs h-3 font-bold text-blue-600";
+            DOM.okButton.classList.add('opacity-50', 'cursor-not-allowed');
 
-                })
-                .catch((error) => {
-                    console.error("❌ Error fetching leaderboard:", error);
-                    DOM.leaderboardBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-600">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}. กรุณาตรวจสอบ Console (F12)</td></tr>`;
-                });
+            const dataToSend = {
+                employeeId: employeeId,
+                score: matchedPairs,
+                timeTaken: (timeRemaining <= 0 ? TIME_LIMIT : TIME_LIMIT - timeRemaining),
+                mistakesCount: mistakesCount,
+                isTimeout: timeRemaining <= 0 && matchedPairs < totalPairs
+            };
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(dataToSend)
+            })
+            .then(res => res.json())
+            .then(response => {
+                if(response.result === 'success'){
+                    document.getElementById('save-status').textContent = "✅ บันทึกสำเร็จ!";
+                    document.getElementById('save-status').className = "text-center text-xs h-3 font-bold text-green-600";
+                    setTimeout(() => {
+                        DOM.resultModal.classList.add('hidden');
+                        DOM.reviewScreen.classList.remove('hidden');
+                        document.getElementById('employeeIdInput').value = '';
+                    }, 1000);
+                } else {
+                    throw new Error(response.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('save-status').textContent = "❌ บันทึกไม่สำเร็จ (ตรวจสอบ Console)";
+                document.getElementById('save-status').className = "text-center text-xs h-3 font-bold text-red-600";
+                setTimeout(() => {
+                    DOM.resultModal.classList.add('hidden');
+                    DOM.reviewScreen.classList.remove('hidden');
+                    document.getElementById('employeeIdInput').value = '';
+                }, 2000);
+            });
         }
-        
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            populateKeyAnswer();
-        });
+
+        // Init
+        populateKeyAnswer();
     </script>
 </body>
 </html>
-
