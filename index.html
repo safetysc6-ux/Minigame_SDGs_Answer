@@ -16,7 +16,7 @@
         }
         body { font-family: 'Inter', 'Prompt', sans-serif; }
         .glass-panel {
-            background-color: rgba(255, 255, 255, 0.4);
+            background-color: rgba(255, 255, 255, 0.45); /* เพิ่มความทึบนิดหน่อยให้อ่านง่าย */
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -50,7 +50,7 @@
             border-top: 3px solid #ffffff;
             width: 20px;
             height: 20px;
-            -webkit-animation: spin 1s linear infinite; /* Safari */
+            -webkit-animation: spin 1s linear infinite;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -67,8 +67,20 @@
         </h1>
         
         <div id="review-screen">
-            <h2 class="text-2xl font-bold text-center text-gray-700 mb-4 font-prompt">💡 ทบทวนข้อมูล (Key Answer)</h2>
-            <div class="max-h-[50vh] overflow-y-auto pr-2 mb-4 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
+            
+            <div class="mb-5 p-4 bg-white/70 rounded-xl border-l-4 border-blue-500 shadow-sm">
+                <h2 class="text-xl font-bold text-gray-800 mb-2 font-prompt flex items-center">
+                    📜 กติกาการเล่น
+                </h2>
+                <ul class="list-disc list-inside text-sm md:text-base text-gray-700 space-y-1">
+                    <li>จับคู่สัญลักษณ์ <span class="font-bold text-blue-600">SDGs</span> กับความหมายให้ถูกต้อง</li>
+                    <li>มีเวลาจำกัด <span class="font-bold text-red-500">120 วินาที</span> ต่อรอบ</li>
+                    <li>จำกัดสิทธิ์การเล่น <span class="font-bold text-indigo-600">3 ครั้งต่อวัน</span> (ต่อ 1 รหัสพนักงาน)</li>
+                    <li>ระบบจะบันทึกคะแนนที่ดีที่สุดและเวลาที่ใช้น้อยที่สุด</li>
+                </ul>
+            </div>
+            <h2 class="text-lg md:text-xl font-bold text-center text-gray-600 mb-3 font-prompt">💡 ทบทวนข้อมูล (Key Answer)</h2>
+            <div class="max-h-[40vh] overflow-y-auto pr-2 mb-4 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
                 <div id="review-grid" class="grid gap-2"></div>
             </div>
             
@@ -214,7 +226,6 @@
             document.getElementById('employeeIdInput').focus();
         }
 
-        // --- 🟢 แก้ไข: เพิ่มการเช็คสิทธิ์ (Check Quota) ก่อนเริ่มเกม ---
         function checkEmployeeIdAndQuota() {
             const idInput = document.getElementById('employeeIdInput');
             const idValue = idInput.value.trim().toUpperCase();
@@ -226,14 +237,13 @@
             }
             DOM.idError.classList.add('hidden');
 
-            // เปลี่ยนปุ่มเป็น Loading
             const originalBtnText = DOM.btnStartGame.innerHTML;
             DOM.btnStartGame.innerHTML = `<div class="spinner"></div>`;
             DOM.btnStartGame.classList.add('cursor-not-allowed', 'opacity-70');
             DOM.btnStartGame.disabled = true;
 
             const checkData = {
-                action: 'check_quota', // บอก Server ว่าขอเช็คสิทธิ์
+                action: 'check_quota', 
                 employeeId: idValue
             };
 
@@ -243,17 +253,14 @@
             })
             .then(res => res.json())
             .then(response => {
-                // คืนค่าปุ่มกลับมาเหมือนเดิม
                 DOM.btnStartGame.innerHTML = originalBtnText;
                 DOM.btnStartGame.classList.remove('cursor-not-allowed', 'opacity-70');
                 DOM.btnStartGame.disabled = false;
 
                 if (response.canPlay) {
-                    // อนุญาตให้เล่น
                     employeeId = idValue;
                     startGame();
                 } else {
-                    // ไม่อนุญาต
                     DOM.idError.innerHTML = `⚠️ รหัสนี้เล่นครบ ${response.limit} ครั้งแล้วในวันนี้<br>(เล่นไปแล้ว ${response.currentCount} ครั้ง)`;
                     DOM.idError.classList.remove('hidden');
                 }
@@ -400,7 +407,6 @@
             DOM.resultModal.classList.remove('hidden');
         }
 
-        // --- 🟢 แก้ไข: ส่ง action: 'save' ไปด้วย ---
         function saveAndGoToHome() {
             if (DOM.okButton.classList.contains('opacity-50')) return;
             
@@ -414,7 +420,7 @@
             DOM.okButton.classList.add('opacity-50', 'cursor-not-allowed');
 
             const dataToSend = {
-                action: 'save', // บอก Server ว่านี่คือการบันทึก
+                action: 'save', 
                 employeeId: employeeId,
                 score: matchedPairs,
                 timeTaken: (timeRemaining <= 0 ? TIME_LIMIT : TIME_LIMIT - timeRemaining),
