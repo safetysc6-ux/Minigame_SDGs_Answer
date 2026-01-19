@@ -16,7 +16,7 @@
         }
         body { font-family: 'Inter', 'Prompt', sans-serif; }
         .glass-panel {
-            background-color: rgba(255, 255, 255, 0.45); /* เพิ่มความทึบนิดหน่อยให้อ่านง่าย */
+            background-color: rgba(255, 255, 255, 0.45);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -43,14 +43,12 @@
         .progress-ring-fg { transition: stroke-dashoffset 1s linear; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
         
-        /* Loading Spinner */
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top: 3px solid #ffffff;
             width: 20px;
             height: 20px;
-            -webkit-animation: spin 1s linear infinite;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -76,17 +74,28 @@
                     <li>จับคู่สัญลักษณ์ <span class="font-bold text-blue-600">SDGs</span> กับความหมายให้ถูกต้อง</li>
                     <li>มีเวลาจำกัด <span class="font-bold text-red-500">120 วินาที</span> ต่อรอบ</li>
                     <li>จำกัดสิทธิ์การเล่น <span class="font-bold text-indigo-600">3 ครั้งต่อวัน</span> (ต่อ 1 รหัสพนักงาน)</li>
+                    <li>ระบบจะบันทึกผลการเล่นทุกรอบ</li>
                 </ul>
             </div>
+
             <h2 class="text-lg md:text-xl font-bold text-center text-gray-600 mb-3 font-prompt">💡 ทบทวนข้อมูล (Key Answer)</h2>
             <div class="max-h-[40vh] overflow-y-auto pr-2 mb-4 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
                 <div id="review-grid" class="grid gap-2"></div>
             </div>
             
-            <button id="goToLoginButton" onclick="showLoginModal()" 
-                    class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
-                <span>เริ่มเกมทดสอบ</span>
-            </button>
+            <div class="space-y-3">
+                <button id="goToLoginButton" onclick="showLoginModal()" 
+                        class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>เริ่มเกมทดสอบ</span>
+                </button>
+
+                <a href="https://lookerstudio.google.com/s/qbmD9gZI_TM" target="_blank"
+                   class="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg no-underline">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    <span>ดู Dashboard คะแนนรวม</span>
+                </a>
+            </div>
         </div>
 
         <div id="game-screen" class="hidden">
@@ -461,5 +470,3 @@
     </script>
 </body>
 </html>
-
-
