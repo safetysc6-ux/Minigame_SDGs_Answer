@@ -3,470 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เกมจับคู่ SDGs | Final Version</title>
+    <title>เกมจับคู่ SDGs | ปิดกิจกรรม</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --color-highlight: #2563EB;
-            --color-correct: #22C55E;
-            --color-error: #EF4444;
-        }
-        body { font-family: 'Inter', 'Prompt', sans-serif; }
-        .glass-panel {
-            background-color: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-        .card {
-            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            min-height: 70px; display: flex; align-items: center;
-            background-color: white; text-align: left;
-        }
-        .selected {
-            border-color: var(--color-highlight) !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
-            transform: scale(1.02);
-        }
-        .matched { pointer-events: none; opacity: 0.8; }
-        .incorrect { animation: shake 0.4s; }
-        #game-area { grid-template-columns: 1fr 1fr; gap: 10px; }
-        #review-grid { grid-template-columns: 1fr; gap: 12px; }
-        @media (min-width: 640px) { #review-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (min-width: 1024px) { #review-grid { grid-template-columns: repeat(3, 1fr); } }
-        .game-icon { width: 40px; height: 40px; margin: 0 auto; }
-        .text-card p { font-size: 0.8rem; line-height: 1.1; }
-        .progress-ring { position: relative; width: 36px; height: 36px; font-size: 0.8rem; }
-        .progress-ring-fg { transition: stroke-dashoffset 1s linear; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+        body { font-family: 'Inter', 'Prompt', sans-serif; overflow: hidden; }
         
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid #ffffff;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Animations --- */
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(40px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.4)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.7)); transform: scale(1.05); }
+        }
+
+        .animate-slide-up {
+            animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        .animate-float {
+            animation: floatAnim 4s ease-in-out infinite;
+        }
+        .animate-glow {
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+        
+        /* ของตกแต่งพื้นหลัง */
+        .floating-particle {
+            position: absolute;
+            font-size: 2.5rem;
+            opacity: 0.4;
+            animation: floatAnim 5s ease-in-out infinite;
+            z-index: 0;
+            filter: grayscale(20%);
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-2 md:p-4">
+<body class="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
 
-    <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 z-0"></div>
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-100 via-white to-purple-100 z-0"></div>
 
-    <div id="main-container" class="relative z-10 w-full max-w-2xl lg:max-w-4xl glass-panel rounded-2xl p-4 md:p-8 text-gray-900 animate-in fade-in duration-500">
+    <div class="floating-particle" style="top: 15%; left: 15%; animation-delay: 0s;">🌍</div>
+    <div class="floating-particle" style="top: 25%; right: 20%; animation-delay: 1.5s;">♻️</div>
+    <div class="floating-particle" style="bottom: 20%; left: 25%; animation-delay: 3s;">🌱</div>
+    <div class="floating-particle" style="bottom: 30%; right: 15%; animation-delay: 0.8s;">💡</div>
+
+    <div class="relative z-10 w-full max-w-md glass-panel rounded-3xl p-8 md:p-10 text-center animate-slide-up">
         
-        <h1 class="text-3xl md:text-4xl font-extrabold text-blue-800 text-center mb-4 md:mb-6 font-prompt drop-shadow-sm">
-            เกมจับคู่ SDGs <span class="text-purple-700">|</span> 🎯
+        <div class="animate-float mb-6 inline-block">
+            <div class="text-7xl animate-glow">✨🙏✨</div>
+        </div>
+        
+        <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4 font-prompt drop-shadow-sm">
+            กิจกรรมสิ้นสุดลงแล้ว
         </h1>
         
-        <div id="review-screen">
-            
-            <div class="mb-5 p-4 bg-white/70 rounded-xl border-l-4 border-blue-500 shadow-sm">
-                <h2 class="text-xl font-bold text-gray-800 mb-2 font-prompt flex items-center">
-                    📜 กติกาการเล่น
-                </h2>
-                <ul class="list-disc list-inside text-sm md:text-base text-gray-700 space-y-1">
-                    <li>จับคู่สัญลักษณ์ <span class="font-bold text-blue-600">SDGs</span> กับความหมายให้ถูกต้อง</li>
-                    <li>มีเวลาจำกัด <span class="font-bold text-red-500">120 วินาที</span> ต่อรอบ</li>
-                    <li>จำกัดสิทธิ์การเล่น <span class="font-bold text-indigo-600">3 ครั้งต่อวัน</span> (ต่อ 1 รหัสพนักงาน)</li>
-                    <li>ระบบจะบันทึกผลการเล่นทุกรอบ</li>
-                </ul>
-            </div>
+        <div class="w-16 h-1 bg-gradient-to-r from-blue-400 to-purple-400 mx-auto rounded-full mb-6"></div>
 
-            <h2 class="text-lg md:text-xl font-bold text-center text-gray-600 mb-3 font-prompt">💡 ทบทวนข้อมูล (Key Answer)</h2>
-            <div class="max-h-[40vh] overflow-y-auto pr-2 mb-4 border border-gray-300 rounded-lg p-3 bg-white/70 shadow-inner">
-                <div id="review-grid" class="grid gap-2"></div>
-            </div>
-            
-            <div class="space-y-3">
-                <button id="goToLoginButton" onclick="showLoginModal()" 
-                        class="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>เริ่มเกมทดสอบ</span>
-                </button>
+        <p class="text-gray-600 text-base md:text-lg mb-8 font-medium leading-relaxed font-prompt">
+            ขอขอบคุณทุกท่านที่ให้ความสนใจ<br>
+            และร่วมสนุกกับ <span class="text-blue-600 font-bold">"เกมจับคู่ SDGs"</span><br>
+            ไว้พบกันใหม่ในกิจกรรมหน้านะครับ 💙
+        </p>
 
-                <a href="https://lookerstudio.google.com/s/qbmD9gZI_TM" target="_blank"
-                   class="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center space-x-2 text-lg no-underline">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    <span>ดู Dashboard คะแนนรวม</span>
-                </a>
-            </div>
-        </div>
+        <a href="https://lookerstudio.google.com/s/qbmD9gZI_TM" target="_blank"
+           class="inline-flex w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-xl items-center justify-center space-x-2 text-lg no-underline font-prompt">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            <span>ดูสรุปคะแนนรวมทั้งหมด</span>
+        </a>
 
-        <div id="game-screen" class="hidden">
-            <div class="flex justify-between items-center bg-white/70 rounded-xl p-3 md:p-5 mb-4 md:mb-6 shadow-lg border border-white/80 text-sm md:text-base">
-                <div class="flex items-center space-x-2">
-                    <div class="progress-ring">
-                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36"> 
-                            <circle class="text-gray-300" stroke-width="4" stroke="currentColor" fill="none" r="16" cx="18" cy="18" />
-                            <circle id="timer-circle" class="progress-ring-fg" stroke-width="4" stroke="rgb(37, 99, 235)" fill="none" r="16" cx="18" cy="18" stroke-dasharray="100.53" stroke-dashoffset="100.53" stroke-linecap="round"/>
-                        </svg>
-                        <span id="timer-display" class="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600">120s</span>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-1 md:space-x-3">
-                    <span class="font-bold text-gray-800">ถูก: <span id="matched-count" class="text-green-600">0/17</span></span>
-                </div>
-                <div class="flex items-center space-x-1 md:space-x-3">
-                    <span class="font-bold text-gray-800">ผิด: <span id="mistakes-count" class="text-red-500">0</span></span>
-                </div>
-            </div>
-
-            <p id="game-message" class="text-center text-base font-semibold my-2 h-4 md:h-6"></p>
-
-            <div id="game-area" class="grid gap-4 my-4 md:my-6">
-                <div class="flex flex-col space-y-3" id="image-column"></div>
-                <div class="flex flex-col space-y-3" id="text-column"></div>
-            </div>
-        </div>
     </div>
 
-    <div id="startModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
-        <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-xs md:max-w-sm transform scale-100 transition duration-300">
-            <h3 class="text-2xl font-extrabold text-blue-700 text-center mb-4 font-prompt">🔑 ใส่รหัสพนักงาน</h3>
-            <div class="mb-5">
-                <input type="text" id="employeeIdInput" 
-                       class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white/70 border-gray-300"
-                       placeholder="เช่น E1001" maxlength="10">
-                <p id="idError" class="text-red-600 text-sm mt-2 text-left hidden"></p>
-            </div>
-            <button id="btnStartGame" onclick="checkEmployeeIdAndQuota()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg flex justify-center items-center">
-                <span>เริ่มเกม</span>
-            </button>
-        </div>
-    </div>
-    
-    <div id="resultModal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
-        <div class="glass-panel bg-white/90 rounded-2xl shadow-2xl p-6 w-full max-w-xs md:max-w-md transform scale-100 transition duration-300">
-            <h3 id="result-header" class="text-2xl font-extrabold text-center mb-4 font-prompt text-green-700">🎉 สรุปผลการทดสอบ</h3>
-            <div class="bg-blue-50/70 rounded-xl p-4 mb-5 border border-blue-200 text-left text-sm md:text-base">
-                <p>รหัสพนักงาน: <span id="final-employee-id" class="text-blue-600 font-bold"></span></p>
-                <p>สถานะ: <span id="final-status-text" class="text-green-600 font-bold"></span></p>
-                <p>เวลาที่ใช้: <span id="final-time-taken" class="text-indigo-600 font-bold"></span> วินาที</p>
-                <p>คะแนน: <span id="final-matched-score" class="text-green-600 font-bold"></span> คู่</p>
-            </div>
-            <div class="space-y-3">
-                <button id="okButton" onclick="saveAndGoToHome()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg">
-                    ตกลง (บันทึกผล)
-                </button>
-                <p id="save-status" class="text-center text-xs h-3 font-bold"></p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // --------------------------------------------------------
-        // 🔴🔴🔴 นำ URL ที่ได้จาก Google Apps Script มาวางตรงนี้ 🔴🔴🔴
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzq7T6enqoD98ZouBdVA2w9z7e2bT02rN3Yj8MWshg_JRAcN1t22WXKsP3HtygKCFXBsw/exec"; 
-        // --------------------------------------------------------
-
-        const TIME_LIMIT = 120;
-        const totalPairs = 17;
-        const CIRCUMFERENCE = 2 * Math.PI * 16; 
-        const sdgGoals = [
-            { matchId: 'SDG1', text: 'ขจัดความยากจน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/1.png' },
-            { matchId: 'SDG2', text: 'ขจัดความหิวโหย', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/2.png' },
-            { matchId: 'SDG3', text: 'สุขภาพและความเป็นอยู่ที่ดี', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/3.png' },
-            { matchId: 'SDG4', text: 'การศึกษาที่มีคุณภาพ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/4.png' },
-            { matchId: 'SDG5', text: 'ความเท่าเทียมทางเพศ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/5.png' },
-            { matchId: 'SDG6', text: 'น้ำสะอาดและการสุขาภิบาล', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/6.png' },
-            { matchId: 'SDG7', text: 'พลังงานสะอาดที่เข้าถึงได้', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/7.png' },
-            { matchId: 'SDG8', text: 'งานที่ดีและการเติบโตทางเศรษฐกิจ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/8.png' },
-            { matchId: 'SDG9', text: 'อุตสาหกรรม นวัตกรรม', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/9.png' },
-            { matchId: 'SDG10', text: 'ลดความเหลื่อมล้ำ', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/10.png' },
-            { matchId: 'SDG11', text: 'เมืองและชุมชนที่ยั่งยืน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/11.png' },
-            { matchId: 'SDG12', text: 'การบริโภคและการผลิตที่ยั่งยืน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/12.png' },
-            { matchId: 'SDG13', text: 'การรับมือโลกรวน', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/13.png' },
-            { matchId: 'SDG14', text: 'ทรัพยากรทางทะเล', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/14.png' },
-            { matchId: 'SDG15', text: 'ระบบนิเวศบนบก', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/15.png' },
-            { matchId: 'SDG16', text: 'สังคมสงบสุข ยุติธรรม', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/16.png' },
-            { matchId: 'SDG17', text: 'ความร่วมมือเพื่อการพัฒนา', iconUrl: 'https://open-sdg.github.io/sdg-translations/assets/img/goals/en/17.png' }
-        ];
-
-        let employeeId = ''; 
-        let gameTimer;
-        let timeRemaining = TIME_LIMIT;
-        let selectedImageCard = null;
-        let selectedTextCard = null;
-        let matchedPairs = 0;
-        let mistakesCount = 0;
-
-        const DOM = {
-            reviewScreen: document.getElementById('review-screen'),
-            keyAnswerList: document.getElementById('review-grid'), 
-            gameScreen: document.getElementById('game-screen'),
-            timerDisplay: document.getElementById('timer-display'),
-            timerCircle: document.getElementById('timer-circle'),
-            mistakesCount: document.getElementById('mistakes-count'),
-            matchedCount: document.getElementById('matched-count'),
-            gameMessage: document.getElementById('game-message'),
-            startModal: document.getElementById('startModal'),
-            resultModal: document.getElementById('resultModal'),
-            okButton: document.getElementById('okButton'), 
-            imageColumn: document.getElementById('image-column'),
-            textColumn: document.getElementById('text-column'),
-            btnStartGame: document.getElementById('btnStartGame'),
-            idError: document.getElementById('idError')
-        };
-
-        function populateKeyAnswer() {
-            DOM.keyAnswerList.innerHTML = '';
-            sdgGoals.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = "review-card card p-2 rounded-xl shadow-md border border-gray-200";
-                div.innerHTML = `
-                    <img src="${item.iconUrl}" class="h-10 w-10 object-contain flex-shrink-0 mr-3">
-                    <p class="text-sm font-semibold text-gray-800">
-                        <span class="font-bold text-blue-600">G${index + 1}:</span> ${item.text}
-                    </p>
-                `;
-                DOM.keyAnswerList.appendChild(div);
-            });
-        }
-
-        function showLoginModal() {
-            DOM.startModal.classList.remove('hidden');
-            document.getElementById('employeeIdInput').focus();
-        }
-
-        function checkEmployeeIdAndQuota() {
-            const idInput = document.getElementById('employeeIdInput');
-            const idValue = idInput.value.trim().toUpperCase();
-            
-            if (!idValue) {
-                DOM.idError.textContent = "⚠️ กรุณากรอกรหัสพนักงาน";
-                DOM.idError.classList.remove('hidden');
-                return;
-            }
-            DOM.idError.classList.add('hidden');
-
-            const originalBtnText = DOM.btnStartGame.innerHTML;
-            DOM.btnStartGame.innerHTML = `<div class="spinner"></div>`;
-            DOM.btnStartGame.classList.add('cursor-not-allowed', 'opacity-70');
-            DOM.btnStartGame.disabled = true;
-
-            const checkData = {
-                action: 'check_quota', 
-                employeeId: idValue
-            };
-
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify(checkData)
-            })
-            .then(res => res.json())
-            .then(response => {
-                DOM.btnStartGame.innerHTML = originalBtnText;
-                DOM.btnStartGame.classList.remove('cursor-not-allowed', 'opacity-70');
-                DOM.btnStartGame.disabled = false;
-
-                if (response.canPlay) {
-                    employeeId = idValue;
-                    startGame();
-                } else {
-                    DOM.idError.innerHTML = `⚠️ รหัสนี้เล่นครบ ${response.limit} ครั้งแล้วในวันนี้<br>(เล่นไปแล้ว ${response.currentCount} ครั้ง)`;
-                    DOM.idError.classList.remove('hidden');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                DOM.btnStartGame.innerHTML = originalBtnText;
-                DOM.btnStartGame.classList.remove('cursor-not-allowed', 'opacity-70');
-                DOM.btnStartGame.disabled = false;
-                
-                DOM.idError.textContent = "❌ เกิดข้อผิดพลาดในการเชื่อมต่อ";
-                DOM.idError.classList.remove('hidden');
-            });
-        }
-
-        function startGame() {
-            DOM.startModal.classList.add('hidden');
-            DOM.reviewScreen.classList.add('hidden');
-            DOM.gameScreen.classList.remove('hidden');
-            
-            const shuffledImg = [...sdgGoals].sort(() => Math.random() - 0.5);
-            const shuffledText = [...sdgGoals].sort(() => Math.random() - 0.5);
-            
-            DOM.imageColumn.innerHTML = '';
-            DOM.textColumn.innerHTML = '';
-            
-            shuffledImg.forEach(item => DOM.imageColumn.appendChild(createCard(item, 'image')));
-            shuffledText.forEach(item => DOM.textColumn.appendChild(createCard(item, 'text')));
-
-            matchedPairs = 0; mistakesCount = 0; timeRemaining = TIME_LIMIT;
-            updateTimerDisplay();
-            clearInterval(gameTimer);
-            gameTimer = setInterval(updateTimer, 1000);
-        }
-
-        function createCard(item, type) {
-            const card = document.createElement('div');
-            card.dataset.matchId = item.matchId;
-            card.onclick = () => selectCard(card, type);
-            let classes = "card p-2 rounded-xl shadow-md border border-white/80 cursor-pointer hover:shadow-xl hover:bg-white/80 bg-white/60";
-            if (type === 'image') {
-                classes += " justify-center text-center";
-                card.innerHTML = `<img src="${item.iconUrl}" class="game-icon object-contain">`;
-            } else {
-                classes += " text-card justify-start text-sm font-semibold text-gray-800";
-                card.innerHTML = `<p>${item.text}</p>`;
-            }
-            card.className = classes;
-            return card;
-        }
-
-        function selectCard(card, type) {
-            if (card.classList.contains('matched') || card.classList.contains('selected')) return;
-            
-            const current = type === 'image' ? selectedImageCard : selectedTextCard;
-            if (current) current.classList.remove('selected');
-            
-            if (type === 'image') selectedImageCard = card;
-            else selectedTextCard = card;
-            
-            card.classList.add('selected');
-
-            if (selectedImageCard && selectedTextCard) {
-                document.getElementById('game-area').style.pointerEvents = 'none'; 
-                setTimeout(checkMatch, 600);
-            }
-        }
-
-        function checkMatch() {
-            const c1 = selectedImageCard;
-            const c2 = selectedTextCard;
-            
-            if (c1.dataset.matchId === c2.dataset.matchId) {
-                [c1, c2].forEach(c => {
-                    c.classList.remove('selected');
-                    c.classList.add('matched', 'bg-green-100', 'border-green-500');
-                });
-                matchedPairs++;
-                DOM.gameMessage.innerHTML = `<span class="text-green-600 font-bold">✅ ถูกต้อง!</span>`;
-                if (matchedPairs === totalPairs) endGame(false);
-            } else {
-                mistakesCount++;
-                [c1, c2].forEach(c => {
-                    c.classList.add('incorrect', 'bg-red-100', 'border-red-500');
-                });
-                DOM.gameMessage.innerHTML = `<span class="text-red-600 font-bold">❌ ผิด!</span>`;
-                setTimeout(() => {
-                    [c1, c2].forEach(c => c.classList.remove('selected', 'incorrect', 'bg-red-100', 'border-red-500'));
-                    DOM.gameMessage.innerHTML = "";
-                }, 800);
-            }
-            
-            selectedImageCard = null; selectedTextCard = null;
-            document.getElementById('game-area').style.pointerEvents = 'auto'; 
-            updateTimerDisplay();
-        }
-
-        function updateTimer() {
-            timeRemaining--;
-            updateTimerDisplay();
-            if (timeRemaining <= 0) {
-                clearInterval(gameTimer);
-                endGame(true);
-            }
-        }
-
-        function updateTimerDisplay() {
-            const pct = (timeRemaining / TIME_LIMIT) * 100;
-            const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
-            const color = timeRemaining <= 30 ? '#EF4444' : '#2563EB';
-            
-            DOM.timerCircle.style.stroke = color;
-            DOM.timerCircle.style.strokeDashoffset = offset;
-            DOM.timerDisplay.textContent = `${timeRemaining}s`;
-            DOM.timerDisplay.style.color = color;
-            
-            DOM.mistakesCount.textContent = mistakesCount;
-            DOM.matchedCount.textContent = `${matchedPairs}/${totalPairs}`;
-        }
-
-        function endGame(isTimeout) {
-            clearInterval(gameTimer);
-            DOM.gameScreen.classList.add('hidden');
-            
-            const timeUsed = isTimeout ? TIME_LIMIT : TIME_LIMIT - timeRemaining;
-            
-            document.getElementById('final-employee-id').textContent = employeeId;
-            document.getElementById('final-time-taken').textContent = timeUsed;
-            document.getElementById('final-matched-score').textContent = matchedPairs;
-            
-            const header = document.getElementById('result-header');
-            const status = document.getElementById('final-status-text');
-            
-            if (isTimeout && matchedPairs < totalPairs) {
-                header.textContent = "🚨 หมดเวลา!"; header.className = "text-2xl font-extrabold text-center mb-4 font-prompt text-red-700";
-                status.textContent = "ไม่สำเร็จ"; status.className = "text-red-600 font-bold";
-            } else {
-                header.textContent = "🎉 ยอดเยี่ยม!"; header.className = "text-2xl font-extrabold text-center mb-4 font-prompt text-green-700";
-                status.textContent = "สำเร็จ"; status.className = "text-green-600 font-bold";
-            }
-            
-            DOM.okButton.classList.remove('opacity-50', 'cursor-not-allowed');
-            document.getElementById('save-status').textContent = "";
-            DOM.resultModal.classList.remove('hidden');
-        }
-
-        function saveAndGoToHome() {
-            if (DOM.okButton.classList.contains('opacity-50')) return;
-            
-            if (GOOGLE_SCRIPT_URL.includes("วาง_URL")) {
-                alert("กรุณาใส่ Web App URL ในโค้ดก่อนครับ");
-                return;
-            }
-
-            document.getElementById('save-status').textContent = "กำลังบันทึกข้อมูล...";
-            document.getElementById('save-status').className = "text-center text-xs h-3 font-bold text-blue-600";
-            DOM.okButton.classList.add('opacity-50', 'cursor-not-allowed');
-
-            const dataToSend = {
-                action: 'save', 
-                employeeId: employeeId,
-                score: matchedPairs,
-                timeTaken: (timeRemaining <= 0 ? TIME_LIMIT : TIME_LIMIT - timeRemaining),
-                mistakesCount: mistakesCount,
-                isTimeout: timeRemaining <= 0 && matchedPairs < totalPairs
-            };
-
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify(dataToSend)
-            })
-            .then(res => res.json())
-            .then(response => {
-                if(response.result === 'success'){
-                    document.getElementById('save-status').textContent = "✅ บันทึกสำเร็จ!";
-                    document.getElementById('save-status').className = "text-center text-xs h-3 font-bold text-green-600";
-                    setTimeout(() => {
-                        DOM.resultModal.classList.add('hidden');
-                        DOM.reviewScreen.classList.remove('hidden');
-                        document.getElementById('employeeIdInput').value = '';
-                    }, 1000);
-                } else {
-                    throw new Error(response.error);
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('save-status').textContent = "❌ บันทึกไม่สำเร็จ (ตรวจสอบ Console)";
-                document.getElementById('save-status').className = "text-center text-xs h-3 font-bold text-red-600";
-                setTimeout(() => {
-                    DOM.resultModal.classList.add('hidden');
-                    DOM.reviewScreen.classList.remove('hidden');
-                    document.getElementById('employeeIdInput').value = '';
-                }, 2000);
-            });
-        }
-
-        populateKeyAnswer();
-    </script>
 </body>
 </html>
